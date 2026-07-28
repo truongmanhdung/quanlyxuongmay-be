@@ -1,0 +1,27 @@
+{
+  "name": "quanlyxuongmay-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend API cho he thong quan ly xuong may mac",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/utils/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "firebase-admin": "^14.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.6.0",
+    "morgan": "^1.10.0",
+    "node-cron": "^4.6.0",
+    "pdfkit": "^0.19.1",
+    "socket.io": "^4.8.3"
+  }
+}

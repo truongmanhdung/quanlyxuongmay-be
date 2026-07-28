@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "454492576046",
+    "project_id": "quanly-49715",
+    "storage_bucket": "quanly-49715.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454492576046:android:09a412f2f3428bb54bc2bf",
+        "android_client_info": {
+          "package_name": "com.xuongmay.xuong_may_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcpWjP2AFLHnh1hqtkqkgrWxZvGWT_8sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

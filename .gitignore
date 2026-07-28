@@ -1,0 +1,7 @@
+# Sensitive credentials - KHONG BAO GIO commit file nay
+atlas-credentials.env
+
+.DS_Store
+
+# Local CodeGraph index (tool cache, not source)
+.codegraph/
