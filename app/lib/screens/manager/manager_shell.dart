@@ -1,4 +1,4 @@
-import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
@@ -22,9 +22,10 @@ class ManagerShell extends StatefulWidget {
 
 class _ManagerShellState extends State<ManagerShell> {
   int index = 0;
+  final _notchController = NotchBottomBarController(index: 0);
 
   late final _screens = [
-    DashboardScreen(onNavigateTab: (i) => setState(() => index = i)),
+    DashboardScreen(onNavigateTab: _goToTab),
     const NotificationsScreen(),
     const PayrollScreen(),
     const ManageScreen(),
@@ -36,6 +37,17 @@ class _ManagerShellState extends State<ManagerShell> {
     (outline: Iconsax.wallet_money, bold: Iconsax.wallet_money_copy, label: 'Tính lương'),
     (outline: Iconsax.setting_2, bold: Iconsax.setting_2_copy, label: 'Quản lý'),
   ];
+
+  void _goToTab(int page) {
+    setState(() => index = page);
+    _notchController.jumpTo(page);
+  }
+
+  @override
+  void dispose() {
+    _notchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _openQuickActions() async {
     final api = context.read<ApiClient>();
@@ -107,34 +119,32 @@ class _ManagerShellState extends State<ManagerShell> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: IndexedStack(index: index, children: _screens),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: FloatingActionButton(
         onPressed: _openQuickActions,
+        tooltip: 'Thao tác nhanh',
         child: const Icon(Iconsax.add),
       ),
-      bottomNavigationBar: AnimatedBottomNavigationBar.builder(
-        itemCount: _tabs.length,
-        activeIndex: index,
-        gapLocation: GapLocation.center,
-        notchSmoothness: NotchSmoothness.softEdge,
-        backgroundColor: isDark ? const Color(0xFF101828) : Colors.white,
+      bottomNavigationBar: AnimatedNotchBottomBar(
+        notchBottomBarController: _notchController,
+        color: isDark ? const Color(0xFF101828) : Colors.white,
+        notchColor: AppColors.brand500,
+        kIconSize: 22,
+        kBottomRadius: 24,
+        showLabel: true,
+        itemLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        bottomBarWidth: MediaQuery.of(context).size.width * 0.9,
         elevation: 12,
-        leftCornerRadius: 24,
-        rightCornerRadius: 24,
-        notchMargin: 10,
         onTap: (i) => setState(() => index = i),
-        tabBuilder: (i, isActive) {
-          final tab = _tabs[i];
-          final color = isActive ? AppColors.brand500 : AppColors.gray400;
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(isActive ? tab.bold : tab.outline, size: 22, color: color),
-              const SizedBox(height: 2),
-              Text(tab.label, style: TextStyle(fontSize: 11, color: color, fontWeight: isActive ? FontWeight.w600 : FontWeight.w400)),
-            ],
-          );
-        },
+        bottomBarItems: _tabs
+            .map(
+              (tab) => BottomBarItem(
+                inActiveItem: Icon(tab.outline, color: AppColors.gray400),
+                activeItem: Icon(tab.bold, color: Colors.white),
+                itemLabel: tab.label,
+              ),
+            )
+            .toList(),
       ),
     );
   }

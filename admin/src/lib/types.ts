@@ -198,6 +198,14 @@ export interface AppNotification {
   createdAt: string;
 }
 
+export interface WorkerReminderSetting {
+  _id: string;
+  worker: { _id: string; code: string; name: string; active: boolean } | string;
+  enabled: boolean;
+  times: string[];
+  message?: string;
+}
+
 export interface ReminderSetting {
   _id: string;
   enabled: boolean;

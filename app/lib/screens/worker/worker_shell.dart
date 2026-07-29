@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +24,7 @@ class _WorkerShellState extends State<WorkerShell> {
   int unreadCount = 0;
   Timer? _timer;
   late final SocketService _socket;
+  final _notchController = NotchBottomBarController(index: 0);
 
   void _handleNotificationNew(dynamic _) => _refreshUnread();
 
@@ -64,6 +65,7 @@ class _WorkerShellState extends State<WorkerShell> {
     _timer?.cancel();
     _socket.off('notification:new', _handleNotificationNew);
     _socket.off('report:status', _handleReportStatus);
+    _notchController.dispose();
     super.dispose();
   }
 
@@ -88,41 +90,30 @@ class _WorkerShellState extends State<WorkerShell> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: IndexedStack(index: index, children: screens),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => setState(() => index = 0),
-        child: const Icon(Iconsax.add),
-      ),
-      bottomNavigationBar: AnimatedBottomNavigationBar.builder(
-        itemCount: _tabs.length,
-        activeIndex: index,
-        gapLocation: GapLocation.center,
-        notchSmoothness: NotchSmoothness.softEdge,
-        backgroundColor: isDark ? const Color(0xFF101828) : Colors.white,
+      bottomNavigationBar: AnimatedNotchBottomBar(
+        notchBottomBarController: _notchController,
+        color: isDark ? const Color(0xFF101828) : Colors.white,
+        notchColor: AppColors.brand500,
+        kIconSize: 22,
+        kBottomRadius: 24,
+        showLabel: true,
+        itemLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        bottomBarWidth: MediaQuery.of(context).size.width * 0.9,
         elevation: 12,
-        leftCornerRadius: 24,
-        rightCornerRadius: 24,
-        notchMargin: 10,
         onTap: (i) {
           setState(() => index = i);
           if (i == 2) _refreshUnread();
         },
-        tabBuilder: (i, isActive) {
+        bottomBarItems: List.generate(_tabs.length, (i) {
           final tab = _tabs[i];
-          final color = isActive ? AppColors.brand500 : AppColors.gray400;
-          Widget icon = Icon(isActive ? tab.bold : tab.outline, size: 22, color: color);
+          Widget inActive = Icon(tab.outline, color: AppColors.gray400);
+          Widget active = Icon(tab.bold, color: Colors.white);
           if (i == 2 && unreadCount > 0) {
-            icon = Badge(label: Text('$unreadCount'), child: icon);
+            inActive = Badge(label: Text('$unreadCount'), child: inActive);
+            active = Badge(label: Text('$unreadCount'), child: active);
           }
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              icon,
-              const SizedBox(height: 2),
-              Text(tab.label, style: TextStyle(fontSize: 11, color: color, fontWeight: isActive ? FontWeight.w600 : FontWeight.w400)),
-            ],
-          );
-        },
+          return BottomBarItem(inActiveItem: inActive, activeItem: active, itemLabel: tab.label);
+        }),
       ),
     );
   }

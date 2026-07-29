@@ -16,6 +16,7 @@ import {
   UserCircleIcon,
   ListIcon,
   AlertIcon,
+  TimeIcon,
 } from "../icons/index";
 
 type NavItem = {
@@ -70,6 +71,11 @@ const navItems: NavItem[] = [
     icon: <BellIcon />,
     name: "Thông báo",
     path: "/notifications",
+  },
+  {
+    icon: <TimeIcon />,
+    name: "Nhắc nhở",
+    path: "/reminders",
   },
 ];
 
