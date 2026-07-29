@@ -11,7 +11,7 @@ const productionReportSchema = new mongoose.Schema(
     quantity: { type: Number, required: true, min: 0 }, // so_luong_san_xuat
     unitPrice: { type: Number, required: true, min: 0 }, // don gia chot tai thoi diem gui
     amount: { type: Number, required: true, min: 0 }, // quantity * unitPrice
-    status: { type: String, enum: ["pending", "confirmed", "rejected"], default: "confirmed" },
+    status: { type: String, enum: ["pending", "confirmed", "rejected"], default: "pending" },
     workDate: { type: Date, default: Date.now }, // ngay_thang_nam lam viec
   },
   { timestamps: true } // createdAt = ngay gio gui (submittedAt)
