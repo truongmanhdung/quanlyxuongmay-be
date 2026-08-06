@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import { Table as AntTable } from "antd";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
@@ -40,6 +40,21 @@ export default function ProductsPage() {
   const [stageRowErrors, setStageRowErrors] = useState<StageRowErrors>({});
 
   const [stageProduct, setStageProduct] = useState<Product | null>(null);
+  const [stagesByProduct, setStagesByProduct] = useState<Record<string, ProcessStage[]>>({});
+  const [stagesLoading, setStagesLoading] = useState<Record<string, boolean>>({});
+
+  async function handleExpand(expanded: boolean, product: Product) {
+    if (!expanded || stagesByProduct[product._id]) return;
+    setStagesLoading((prev) => ({ ...prev, [product._id]: true }));
+    try {
+      const data = await productsApi.listStages(product._id);
+      setStagesByProduct((prev) => ({ ...prev, [product._id]: data }));
+    } catch {
+      // bo qua, khu vuc mo rong se hien "khong tai duoc"
+    } finally {
+      setStagesLoading((prev) => ({ ...prev, [product._id]: false }));
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -181,53 +196,86 @@ export default function ProductsPage() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="max-w-full overflow-x-auto">
-          <Table>
-            <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
-              <TableRow>
-                <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Tên hàng</TableCell>
-                <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Khách hàng</TableCell>
-                <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Đơn giá chuẩn</TableCell>
-                <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Trạng thái</TableCell>
-                <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">{""}</TableCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {loading && (
-                <TableRow>
-                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={5}>Đang tải...</TableCell>
-                </TableRow>
-              )}
-              {!loading && products.length === 0 && (
-                <TableRow>
-                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={5}>Chưa có mẫu hàng nào</TableCell>
-                </TableRow>
-              )}
-              {products.map((p) => (
-                <TableRow key={p._id}>
-                  <TableCell className="py-3 px-5 font-medium text-gray-800 text-theme-sm dark:text-white/90">{p.name}</TableCell>
-                  <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{p.customer?.name}</TableCell>
-                  <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{formatCurrency(p.standardPrice)}</TableCell>
-                  <TableCell className="py-3 px-5">
-                    <Badge size="sm" color={p.active ? "success" : "light"}>{p.active ? "Hoạt động" : "Ngừng"}</Badge>
-                  </TableCell>
-                  <TableCell className="py-3 px-5">
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => setStageProduct(p)} className="text-gray-500 hover:text-brand-500 dark:text-gray-400" title="Công đoạn & đơn giá">
-                        <ListIcon />
-                      </button>
-                      <button onClick={() => openEdit(p)} className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
-                        <PencilIcon />
-                      </button>
-                      <button onClick={() => handleDelete(p)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
-                        <TrashBinIcon />
-                      </button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="max-w-full overflow-x-auto p-2">
+          <AntTable
+            rowKey="_id"
+            loading={loading}
+            dataSource={products}
+            pagination={false}
+            locale={{ emptyText: "Chưa có mẫu hàng nào" }}
+            expandable={{
+              onExpand: handleExpand,
+              expandedRowRender: (p: Product) => {
+                if (stagesLoading[p._id]) {
+                  return <div className="py-3 text-sm text-gray-400">Đang tải công đoạn...</div>;
+                }
+                const stages = stagesByProduct[p._id] || [];
+                if (stages.length === 0) {
+                  return <div className="py-3 text-sm text-gray-400">Chưa có công đoạn nào</div>;
+                }
+                return (
+                  <AntTable
+                    rowKey="_id"
+                    size="small"
+                    pagination={false}
+                    dataSource={stages}
+                    columns={[
+                      { title: "Tên công đoạn", dataIndex: "name", key: "name" },
+                      {
+                        title: "Đơn giá",
+                        dataIndex: "unitPrice",
+                        key: "unitPrice",
+                        align: "right" as const,
+                        render: (v: number) => formatCurrency(v),
+                      },
+                      {
+                        title: "Trạng thái",
+                        dataIndex: "active",
+                        key: "active",
+                        render: (v: boolean) => (
+                          <Badge size="sm" color={v ? "success" : "light"}>{v ? "Hoạt động" : "Ngừng"}</Badge>
+                        ),
+                      },
+                    ]}
+                  />
+                );
+              },
+            }}
+            columns={[
+              { title: "Tên hàng", dataIndex: "name", key: "name" },
+              { title: "Khách hàng", key: "customer", render: (_: unknown, p: Product) => p.customer?.name },
+              {
+                title: "Đơn giá chuẩn",
+                dataIndex: "standardPrice",
+                key: "standardPrice",
+                render: (v: number) => formatCurrency(v),
+              },
+              {
+                title: "Trạng thái",
+                dataIndex: "active",
+                key: "active",
+                render: (v: boolean) => <Badge size="sm" color={v ? "success" : "light"}>{v ? "Hoạt động" : "Ngừng"}</Badge>,
+              },
+              {
+                title: "",
+                key: "actions",
+                width: 110,
+                render: (_: unknown, p: Product) => (
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setStageProduct(p)} className="text-gray-500 hover:text-brand-500 dark:text-gray-400" title="Quản lý công đoạn & đơn giá">
+                      <ListIcon />
+                    </button>
+                    <button onClick={() => openEdit(p)} className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
+                      <PencilIcon />
+                    </button>
+                    <button onClick={() => handleDelete(p)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
+                      <TrashBinIcon />
+                    </button>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -335,7 +383,15 @@ export default function ProductsPage() {
       {stageProduct && (
         <StageManagerModal
           product={stageProduct}
-          onClose={() => setStageProduct(null)}
+          onClose={() => {
+            // xoa cache de dong mo rong hien lai du lieu moi nhat sau khi sua trong modal
+            setStagesByProduct((prev) => {
+              const next = { ...prev };
+              delete next[stageProduct._id];
+              return next;
+            });
+            setStageProduct(null);
+          }}
         />
       )}
     </div>

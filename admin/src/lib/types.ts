@@ -83,8 +83,9 @@ export interface ProductionReport {
   _id: string;
   worker: { _id: string; code: string; name: string };
   customer: { _id: string; code: string; name: string };
-  product: { _id: string; name: string; unit?: string };
-  processStage: { _id: string; name: string; unitPrice: number };
+  // co the null neu mau hang / cong doan da bi xoa sau khi bao cao duoc gui
+  product: { _id: string; name: string; unit?: string } | null;
+  processStage: { _id: string; name: string; unitPrice: number } | null;
   batchNumber?: string;
   quantity: number;
   unitPrice: number;
@@ -138,7 +139,8 @@ export interface PayrollDefectComparison {
 export interface Batch {
   _id: string;
   code: string;
-  product: { _id: string; name: string; unit?: string };
+  // co the null neu mau hang bi xoa sau khi tao lo hang
+  product: { _id: string; name: string; unit?: string } | null;
   customer: { _id: string; code: string; name: string };
   plannedQuantity?: number;
   status: "dang_lam" | "chua_hoan_thanh" | "hoan_thanh";
@@ -156,7 +158,7 @@ export interface BatchDetail extends Batch {
 export interface DefectReport {
   _id: string;
   batch?: { _id: string; code: string };
-  product: { _id: string; name: string };
+  product: { _id: string; name: string } | null;
   customer: { _id: string; code: string; name: string };
   processStage?: { _id: string; name: string };
   worker?: { _id: string; code: string; name: string };

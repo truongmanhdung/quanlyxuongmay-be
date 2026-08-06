@@ -47,7 +47,7 @@ const overview = asyncHandler(async (req, res) => {
     ProductionReport.find()
       .populate("worker", "code name")
       .populate("customer", "code name")
-      .populate("product", "code name")
+      .populate("product", "name")
       .populate("processStage", "name")
       .sort({ createdAt: -1 })
       .limit(10),

@@ -63,7 +63,7 @@ export default function NotificationsPage() {
     const handleNewReport = (report: ProductionReport) => {
       notification.info({
         title: "Báo cáo sản lượng mới",
-        description: `${report.worker.name} vừa gửi ${formatNumber(report.quantity)} sp — ${report.product.name} / ${report.processStage.name}`,
+        description: `${report.worker.name} vừa gửi ${formatNumber(report.quantity)} sp — ${report.product?.name ?? "(mẫu hàng đã xoá)"} / ${report.processStage?.name ?? "(công đoạn đã xoá)"}`,
         placement: "topRight",
       });
       loadRef.current();
@@ -144,7 +144,7 @@ export default function NotificationsPage() {
                     <span className="text-gray-500 text-theme-xs dark:text-gray-400">{r.worker.code}</span>
                   </TableCell>
                   <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">
-                    {r.product.name} — {r.processStage.name}
+                    {r.product?.name ?? "(mẫu hàng đã xoá)"} — {r.processStage?.name ?? "(công đoạn đã xoá)"}
                   </TableCell>
                   <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{r.batchNumber || "—"}</TableCell>
                   <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{formatNumber(r.quantity)}</TableCell>

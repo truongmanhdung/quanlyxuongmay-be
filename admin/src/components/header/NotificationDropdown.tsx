@@ -120,7 +120,7 @@ export default function NotificationDropdown() {
                     <span className="font-medium text-gray-800 dark:text-white/90">{r.worker.name}</span>
                     <span>đã gửi sản lượng</span>
                     <span className="font-medium text-gray-800 dark:text-white/90">
-                      {r.product.name} — {r.processStage.name}
+                      {r.product?.name ?? "(mẫu hàng đã xoá)"} — {r.processStage?.name ?? "(công đoạn đã xoá)"}
                     </span>
                   </span>
 

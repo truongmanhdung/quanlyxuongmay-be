@@ -22,7 +22,7 @@ const getOne = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate("customer", "code name");
   if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
   const details = await OrderDetail.find({ order: order._id })
-    .populate("product", "code name unit")
+    .populate("product", "name unit")
     .populate("batch", "code");
   res.json({ ...order.toObject(), details });
 });

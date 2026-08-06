@@ -25,7 +25,7 @@ class ReportTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '${report.product.name} — ${report.processStage.name}',
+                    '${report.product?.name ?? "(mẫu hàng đã xoá)"} — ${report.processStage?.name ?? "(công đoạn đã xoá)"}',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: isDark ? Colors.white : AppColors.gray800,

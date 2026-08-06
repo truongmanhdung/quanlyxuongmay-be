@@ -107,7 +107,7 @@ export default function BatchesPage() {
     setEditing(b);
     setForm({
       code: b.code,
-      product: b.product._id,
+      product: b.product?._id ?? "",
       customer: b.customer._id,
       plannedQuantity: b.plannedQuantity ? String(b.plannedQuantity) : "",
       note: b.note || "",
@@ -232,7 +232,7 @@ export default function BatchesPage() {
                 return (
                   <TableRow key={b._id}>
                     <TableCell className="py-3 px-5 font-medium text-gray-800 text-theme-sm dark:text-white/90">{b.code}</TableCell>
-                    <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{b.product.name}</TableCell>
+                    <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{b.product?.name ?? "(mẫu hàng đã xoá)"}</TableCell>
                     <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{b.customer.name}</TableCell>
                     <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">
                       {formatNumber(b.reportedQuantity)}
@@ -296,7 +296,7 @@ export default function BatchesPage() {
             <div>
               <Label>Mẫu hàng {!editing && <span className="text-error-500">*</span>}</Label>
               {editing ? (
-                <Input value={editing.product.name} disabled />
+                <Input value={editing.product?.name ?? "(mẫu hàng đã xoá)"} disabled />
               ) : (
                 <Select
                   placeholder="Chọn mẫu hàng"

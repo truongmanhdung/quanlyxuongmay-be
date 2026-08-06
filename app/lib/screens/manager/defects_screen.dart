@@ -229,7 +229,7 @@ class _DefectsScreenState extends State<DefectsScreen> {
                               final isReturn = d.type == DefectType.traLai;
                               return Card(
                                 child: ListTile(
-                                  title: Text('${d.product.name} · ${formatNumber(d.quantity)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  title: Text('${d.product?.name ?? "(mẫu hàng đã xoá)"} · ${formatNumber(d.quantity)}', style: const TextStyle(fontWeight: FontWeight.w600)),
                                   subtitle: Text(
                                     '${d.customer.name}${d.reason != null && d.reason!.isNotEmpty ? " · ${d.reason}" : ""}\n${formatDateTime(d.reportedAt)}',
                                   ),

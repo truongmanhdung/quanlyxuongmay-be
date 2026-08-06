@@ -19,8 +19,9 @@ class ProductionReport {
   final String id;
   final WorkerRef worker;
   final CustomerRef customer;
-  final ProductRef product;
-  final ProcessStageRef processStage;
+  // co the null neu mau hang / cong doan da bi xoa sau khi bao cao duoc gui
+  final ProductRef? product;
+  final ProcessStageRef? processStage;
   final String? batchNumber;
   final double quantity;
   final double unitPrice;
@@ -48,8 +49,10 @@ class ProductionReport {
         id: json['_id'] as String,
         worker: WorkerRef.fromJson(json['worker'] as Map<String, dynamic>),
         customer: CustomerRef.fromJson(json['customer'] as Map<String, dynamic>),
-        product: ProductRef.fromJson(json['product'] as Map<String, dynamic>),
-        processStage: ProcessStageRef.fromJson(json['processStage'] as Map<String, dynamic>),
+        product: json['product'] != null ? ProductRef.fromJson(json['product'] as Map<String, dynamic>) : null,
+        processStage: json['processStage'] != null
+            ? ProcessStageRef.fromJson(json['processStage'] as Map<String, dynamic>)
+            : null,
         batchNumber: json['batchNumber'] as String?,
         quantity: (json['quantity'] as num).toDouble(),
         unitPrice: (json['unitPrice'] as num).toDouble(),

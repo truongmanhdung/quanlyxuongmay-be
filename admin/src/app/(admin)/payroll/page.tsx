@@ -310,8 +310,8 @@ export default function PayrollPage() {
                                 {group.reports.map((r) => (
                                   <div key={r._id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
                                     <div className="text-gray-700 dark:text-gray-300">
-                                      <span className="font-medium">{r.processStage.name}</span>
-                                      <span className="text-gray-400"> — {r.product.name}</span>
+                                      <span className="font-medium">{r.processStage?.name ?? "(công đoạn đã xoá)"}</span>
+                                      <span className="text-gray-400"> — {r.product?.name ?? "(mẫu hàng đã xoá)"}</span>
                                       {r.batchNumber && <span className="text-gray-400"> · Lô {r.batchNumber}</span>}
                                     </div>
                                     <div className="whitespace-nowrap text-gray-500 dark:text-gray-400">

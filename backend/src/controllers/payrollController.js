@@ -127,7 +127,7 @@ const detail = asyncHandler(async (req, res) => {
   })
     .populate("worker", "name code")
     .populate("customer", "name code")
-    .populate("product", "code name")
+    .populate("product", "name")
     .populate("processStage", "name")
     .sort({ workDate: -1 });
 

@@ -242,7 +242,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
                                 child: ListTile(
                                   title: Text(b.code, style: const TextStyle(fontWeight: FontWeight.w600)),
                                   subtitle: Text(
-                                    '${b.product.name} · ${b.customer.name}\n'
+                                    '${b.product?.name ?? "(mẫu hàng đã xoá)"} · ${b.customer.name}\n'
                                     '${formatNumber(b.reportedQuantity)}${b.plannedQuantity != null ? " / ${formatNumber(b.plannedQuantity!)}" : ""}'
                                     '${ready ? " · Đủ SL, chờ duyệt" : ""}'
                                     '${b.exportedQuantity > 0 ? " · Đã xuất kho ${formatNumber(b.exportedQuantity)}" : ""}',

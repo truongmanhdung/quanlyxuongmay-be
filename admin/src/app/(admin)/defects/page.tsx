@@ -91,7 +91,7 @@ export default function DefectsPage() {
     const handleNewDefect = (defect: DefectReport) => {
       notification.info({
         title: TYPE_LABEL[defect.type],
-        description: `${defect.product.name} — ${formatNumber(defect.quantity)} sp`,
+        description: `${defect.product?.name ?? "(mẫu hàng đã xoá)"} — ${formatNumber(defect.quantity)} sp`,
         placement: "topRight",
       });
       loadRef.current();
@@ -242,7 +242,7 @@ export default function DefectsPage() {
                         )}
                         {defects.map((d) => (
                           <TableRow key={d._id}>
-                            <TableCell className="py-3 px-5 font-medium text-gray-800 text-theme-sm dark:text-white/90">{d.product.name}</TableCell>
+                            <TableCell className="py-3 px-5 font-medium text-gray-800 text-theme-sm dark:text-white/90">{d.product?.name ?? "(mẫu hàng đã xoá)"}</TableCell>
                             <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{d.customer.name}</TableCell>
                             <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">
                               {d.processStage || d.worker ? (
