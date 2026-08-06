@@ -79,7 +79,7 @@ export default function NotificationsPage() {
       await reportsApi.setStatus(report._id, status);
       await load();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Cập nhật trạng thái thất bại");
+      notification.error({ message: err instanceof ApiError ? err.message : "Cập nhật trạng thái thất bại" });
     }
   }
 

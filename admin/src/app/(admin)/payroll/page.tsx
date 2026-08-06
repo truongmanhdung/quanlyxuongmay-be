@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Table as AntTable, DatePicker, Space, Tooltip } from "antd";
+import { Table as AntTable, DatePicker, Space, Tooltip, notification } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import Button from "@/components/ui/button/Button";
@@ -53,7 +53,7 @@ export default function PayrollPage() {
       const slip = await payrollApi.export(row.worker._id, period);
       setSlips((prev) => ({ ...prev, [row.worker!._id]: slip }));
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Xuất phiếu lương thất bại");
+      notification.error({ message: err instanceof ApiError ? err.message : "Xuất phiếu lương thất bại" });
     } finally {
       setExportingId(null);
     }
@@ -65,7 +65,7 @@ export default function PayrollPage() {
     try {
       await payrollApi.downloadSlipFile(slip._id, format, `phieu-luong-${row.worker!.code}-${period}.${format}`);
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Tải file thất bại");
+      notification.error({ message: err instanceof ApiError ? err.message : "Tải file thất bại" });
     }
   }
 

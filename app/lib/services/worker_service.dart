@@ -14,4 +14,11 @@ class WorkerService {
     final res = await api.post('/workers', body: {'code': code, 'name': name, 'phone': phone, 'note': note});
     return Worker.fromJson(res as Map<String, dynamic>);
   }
+
+  Future<Worker> update(String id, {required String name, String? phone, String? note}) async {
+    final res = await api.put('/workers/$id', body: {'name': name, 'phone': phone, 'note': note});
+    return Worker.fromJson(res as Map<String, dynamic>);
+  }
+
+  Future<void> remove(String id) => api.delete('/workers/$id');
 }

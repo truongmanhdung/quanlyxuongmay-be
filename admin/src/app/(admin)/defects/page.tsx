@@ -11,6 +11,7 @@ import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
 import { PlusIcon, TrashBinIcon } from "@/icons";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { defectsApi } from "@/lib/resources/defects";
 import { productsApi } from "@/lib/resources/products";
 import { customersApi } from "@/lib/resources/customers";
@@ -41,6 +42,7 @@ const emptyForm = {
 };
 
 export default function DefectsPage() {
+  const confirmDialog = useConfirmDialog();
   const [defects, setDefects] = useState<DefectReport[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -160,12 +162,13 @@ export default function DefectsPage() {
   }
 
   async function handleDelete(d: DefectReport) {
-    if (!confirm("Xoá bản ghi này?")) return;
+    const ok = await confirmDialog({ message: "Xoá bản ghi này?", danger: true });
+    if (!ok) return;
     try {
       await defectsApi.remove(d._id);
       await load();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Xoá thất bại");
+      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
     }
   }
 

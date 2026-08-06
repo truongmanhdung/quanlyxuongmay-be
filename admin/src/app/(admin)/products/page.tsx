@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Table as AntTable } from "antd";
+import { Table as AntTable, notification } from "antd";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
@@ -8,6 +8,7 @@ import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
 import { PencilIcon, TrashBinIcon, PlusIcon, ListIcon } from "@/icons";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { productsApi } from "@/lib/resources/products";
 import { customersApi } from "@/lib/resources/customers";
 import { Product, ProcessStage, Customer } from "@/lib/types";
@@ -24,7 +25,12 @@ function emptyStageRow(): StageRow {
   return { name: "", price: "" };
 }
 
+// Do rong cot dung chung giua bang mau hang va bang cong doan mo rong ben duoi,
+// de 2 bang thang hang voi nhau khi expand
+const PRODUCT_COL_WIDTH = { customer: 200, price: 140, status: 130 };
+
 export default function ProductsPage() {
+  const confirmDialog = useConfirmDialog();
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,12 +175,13 @@ export default function ProductsPage() {
   }
 
   async function handleDelete(p: Product) {
-    if (!confirm(`Xoá mẫu hàng "${p.name}"?`)) return;
+    const ok = await confirmDialog({ message: `Xoá mẫu hàng "${p.name}"?`, danger: true });
+    if (!ok) return;
     try {
       await productsApi.remove(p._id);
       await load();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Xoá thất bại");
+      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
     }
   }
 
@@ -202,6 +209,7 @@ export default function ProductsPage() {
             loading={loading}
             dataSource={products}
             pagination={false}
+            tableLayout="fixed"
             locale={{ emptyText: "Chưa có mẫu hàng nào" }}
             expandable={{
               onExpand: handleExpand,
@@ -218,13 +226,17 @@ export default function ProductsPage() {
                     rowKey="_id"
                     size="small"
                     pagination={false}
+                    tableLayout="fixed"
                     dataSource={stages}
                     columns={[
                       { title: "Tên công đoạn", dataIndex: "name", key: "name" },
+                      // cot rong de thang hang voi cot "Khach hang" cua bang cha
+                      { title: "", key: "spacer", width: PRODUCT_COL_WIDTH.customer },
                       {
                         title: "Đơn giá",
                         dataIndex: "unitPrice",
                         key: "unitPrice",
+                        width: PRODUCT_COL_WIDTH.price,
                         align: "right" as const,
                         render: (v: number) => formatCurrency(v),
                       },
@@ -232,10 +244,14 @@ export default function ProductsPage() {
                         title: "Trạng thái",
                         dataIndex: "active",
                         key: "active",
+                        width: PRODUCT_COL_WIDTH.status,
                         render: (v: boolean) => (
                           <Badge size="sm" color={v ? "success" : "light"}>{v ? "Hoạt động" : "Ngừng"}</Badge>
                         ),
                       },
+                      // cot rong de bu vao cho cot "actions" (110px) cua bang cha, giup cot linh hoat
+                      // "Ten cong doan" tinh dung do rong bang voi "Ten hang"
+                      { title: "", key: "spacer-end", width: 110 },
                     ]}
                   />
                 );
@@ -243,17 +259,25 @@ export default function ProductsPage() {
             }}
             columns={[
               { title: "Tên hàng", dataIndex: "name", key: "name" },
-              { title: "Khách hàng", key: "customer", render: (_: unknown, p: Product) => p.customer?.name },
+              {
+                title: "Khách hàng",
+                key: "customer",
+                width: PRODUCT_COL_WIDTH.customer,
+                render: (_: unknown, p: Product) => p.customer?.name,
+              },
               {
                 title: "Đơn giá chuẩn",
                 dataIndex: "standardPrice",
                 key: "standardPrice",
+                width: PRODUCT_COL_WIDTH.price,
+                align: "right" as const,
                 render: (v: number) => formatCurrency(v),
               },
               {
                 title: "Trạng thái",
                 dataIndex: "active",
                 key: "active",
+                width: PRODUCT_COL_WIDTH.status,
                 render: (v: boolean) => <Badge size="sm" color={v ? "success" : "light"}>{v ? "Hoạt động" : "Ngừng"}</Badge>,
               },
               {
@@ -399,6 +423,7 @@ export default function ProductsPage() {
 }
 
 function StageManagerModal({ product, onClose }: { product: Product; onClose: () => void }) {
+  const confirmDialog = useConfirmDialog();
   const [stages, setStages] = useState<ProcessStage[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -462,17 +487,18 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
       setEditingId(null);
       await load();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Cập nhật công đoạn thất bại");
+      setError(err instanceof ApiError ? err.message : "Cập nhật công đoạn thất bại");
     }
   }
 
   async function handleRemove(stage: ProcessStage) {
-    if (!confirm(`Xoá công đoạn "${stage.name}"?`)) return;
+    const ok = await confirmDialog({ message: `Xoá công đoạn "${stage.name}"?`, danger: true });
+    if (!ok) return;
     try {
       await productsApi.removeStage(product._id, stage._id);
       await load();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Xoá thất bại");
+      setError(err instanceof ApiError ? err.message : "Xoá thất bại");
     }
   }
 

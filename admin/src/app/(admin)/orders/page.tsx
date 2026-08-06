@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Tabs, Table as AntTable } from "antd";
+import { Tabs, Table as AntTable, notification } from "antd";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
@@ -9,6 +9,7 @@ import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
 import { PlusIcon, TrashBinIcon, EyeIcon } from "@/icons";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { ordersApi } from "@/lib/resources/orders";
 import { customersApi } from "@/lib/resources/customers";
 import { productsApi } from "@/lib/resources/products";
@@ -20,6 +21,7 @@ import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 type DetailRow = { product: string; productLabel: string; batch: string; quantity: string; unitPrice: string };
 
 export default function OrdersPage() {
+  const confirmDialog = useConfirmDialog();
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,12 +57,13 @@ export default function OrdersPage() {
   }
 
   async function handleDelete(o: Order) {
-    if (!confirm(`Xoá phiếu ${o.code}?`)) return;
+    const ok = await confirmDialog({ message: `Xoá phiếu ${o.code}?`, danger: true });
+    if (!ok) return;
     try {
       await ordersApi.remove(o._id);
       await load();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Xoá thất bại");
+      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
     }
   }
 

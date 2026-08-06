@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { notification } from "antd";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
@@ -7,6 +8,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Badge from "@/components/ui/badge/Badge";
 import { PencilIcon, TrashBinIcon, PlusIcon } from "@/icons";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { workersApi } from "@/lib/resources/workers";
 import { Worker } from "@/lib/types";
 import { ApiError } from "@/lib/api";
@@ -15,6 +17,7 @@ import { formatDate } from "@/lib/format";
 const emptyForm = { code: "", name: "", phone: "", note: "" };
 
 export default function WorkersPage() {
+  const confirmDialog = useConfirmDialog();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -76,12 +79,13 @@ export default function WorkersPage() {
   }
 
   async function handleDelete(w: Worker) {
-    if (!confirm(`Xoá công nhân "${w.name}" (${w.code})?`)) return;
+    const ok = await confirmDialog({ message: `Xoá công nhân "${w.name}" (${w.code})?`, danger: true });
+    if (!ok) return;
     try {
       await workersApi.remove(w._id);
       await load();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Xoá thất bại");
+      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
     }
   }
 

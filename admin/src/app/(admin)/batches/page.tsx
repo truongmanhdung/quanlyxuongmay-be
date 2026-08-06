@@ -9,6 +9,7 @@ import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
 import { PencilIcon, TrashBinIcon, PlusIcon, CheckCircleIcon } from "@/icons";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { batchesApi } from "@/lib/resources/batches";
 import { productsApi } from "@/lib/resources/products";
 import { customersApi } from "@/lib/resources/customers";
@@ -33,6 +34,7 @@ const STATUS_COLOR: Record<Batch["status"], "warning" | "light" | "success"> = {
 const emptyForm = { code: "", product: "", customer: "", plannedQuantity: "", note: "" };
 
 export default function BatchesPage() {
+  const confirmDialog = useConfirmDialog();
   const searchParams = useSearchParams();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -150,22 +152,27 @@ export default function BatchesPage() {
   }
 
   async function handleComplete(b: Batch) {
-    if (!confirm(`Duyệt hoàn thành lô "${b.code}"? Hãy chắc chắn đã kiểm tra chất lượng.`)) return;
+    const ok = await confirmDialog({
+      title: "Duyệt hoàn thành",
+      message: `Duyệt hoàn thành lô "${b.code}"? Hãy chắc chắn đã kiểm tra chất lượng.`,
+    });
+    if (!ok) return;
     try {
       await batchesApi.complete(b._id);
       await load();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Duyệt hoàn thành thất bại");
+      notification.error({ message: err instanceof ApiError ? err.message : "Duyệt hoàn thành thất bại" });
     }
   }
 
   async function handleDelete(b: Batch) {
-    if (!confirm(`Xoá lô hàng "${b.code}"?`)) return;
+    const ok = await confirmDialog({ message: `Xoá lô hàng "${b.code}"?`, danger: true });
+    if (!ok) return;
     try {
       await batchesApi.remove(b._id);
       await load();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Xoá thất bại");
+      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
     }
   }
 

@@ -11,6 +11,7 @@ import '../../models/product.dart';
 import '../../services/batch_service.dart';
 import '../../services/customer_service.dart';
 import '../../services/product_service.dart';
+import '../../widgets/app_form_sheet.dart';
 import '../../widgets/filter_pill.dart';
 import '../../widgets/pill_badge.dart';
 
@@ -87,14 +88,14 @@ class _BatchesScreenState extends State<BatchesScreen> {
     Product? selectedProduct;
     List<Product> products = [];
 
-    final saved = await showDialog<bool>(
+    final saved = await showAppFormSheet<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
+        builder: (ctx, setSheetState) {
           Future<void> loadProducts(Customer c) async {
             final api = ctx.read<ApiClient>();
             final data = await ProductService(api).list(customer: c.id);
-            setDialogState(() {
+            setSheetState(() {
               products = data;
               selectedProduct = data.isNotEmpty ? data.first : null;
             });
@@ -104,44 +105,42 @@ class _BatchesScreenState extends State<BatchesScreen> {
             loadProducts(selectedCustomer);
           }
 
-          return AlertDialog(
-            title: const Text('Thêm lô hàng'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: codeCtrl,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: const InputDecoration(labelText: 'Mã lô (VD: LO001)'),
-                  ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<Customer>(
-                    initialValue: selectedCustomer,
-                    decoration: const InputDecoration(labelText: 'Khách hàng'),
-                    items: customers.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
-                    onChanged: (c) {
-                      setDialogState(() {
-                        selectedCustomer = c!;
-                        products = [];
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<Product>(
-                    initialValue: selectedProduct,
-                    decoration: const InputDecoration(labelText: 'Mẫu hàng'),
-                    items: products.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
-                    onChanged: (p) => setDialogState(() => selectedProduct = p),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: qtyCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Số lượng kế hoạch (không bắt buộc)'),
-                  ),
-                ],
-              ),
+          return AppFormSheetScaffold(
+            title: 'Thêm lô hàng',
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: codeCtrl,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(labelText: 'Mã lô (VD: LO001)'),
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<Customer>(
+                  initialValue: selectedCustomer,
+                  decoration: const InputDecoration(labelText: 'Khách hàng'),
+                  items: customers.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
+                  onChanged: (c) {
+                    setSheetState(() {
+                      selectedCustomer = c!;
+                      products = [];
+                    });
+                  },
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<Product>(
+                  initialValue: selectedProduct,
+                  decoration: const InputDecoration(labelText: 'Mẫu hàng'),
+                  items: products.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
+                  onChanged: (p) => setSheetState(() => selectedProduct = p),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: qtyCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Số lượng kế hoạch (không bắt buộc)'),
+                ),
+              ],
             ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
@@ -174,10 +173,10 @@ class _BatchesScreenState extends State<BatchesScreen> {
   }
 
   Future<void> _complete(Batch b) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppFormSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Duyệt hoàn thành'),
+      builder: (ctx) => AppFormSheetScaffold(
+        title: 'Duyệt hoàn thành',
         content: Text('Duyệt hoàn thành lô "${b.code}"? Hãy chắc chắn đã kiểm tra chất lượng.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
