@@ -14,4 +14,11 @@ class CustomerService {
     final res = await api.post('/customers', body: {'code': code, 'name': name, 'phone': phone, 'note': note});
     return Customer.fromJson(res as Map<String, dynamic>);
   }
+
+  Future<Customer> update(String id, {required String name, String? phone, String? note}) async {
+    final res = await api.put('/customers/$id', body: {'name': name, 'phone': phone, 'note': note});
+    return Customer.fromJson(res as Map<String, dynamic>);
+  }
+
+  Future<void> remove(String id) => api.delete('/customers/$id');
 }

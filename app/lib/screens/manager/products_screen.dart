@@ -203,6 +203,92 @@ class _ProductsScreenState extends State<ProductsScreen> {
     _load();
   }
 
+  Future<void> _showEditDialog(Product p) async {
+    final nameCtrl = TextEditingController(text: p.name);
+    final unitCtrl = TextEditingController(text: p.unit ?? '');
+    final priceCtrl = TextEditingController(text: p.standardPrice.toString());
+    String? nameError;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Sửa mẫu hàng'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(labelText: 'Tên hàng', errorText: nameError),
+                ),
+                const SizedBox(height: 10),
+                TextField(controller: unitCtrl, decoration: const InputDecoration(labelText: 'Đơn vị tính')),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: priceCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Đơn giá chuẩn'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+            ElevatedButton(
+              onPressed: () async {
+                setDialogState(() {
+                  nameError = nameCtrl.text.trim().isEmpty ? 'Vui lòng nhập tên hàng' : null;
+                });
+                if (nameError != null) return;
+                final api = ctx.read<ApiClient>();
+                try {
+                  await ProductService(api).update(
+                    p.id,
+                    name: nameCtrl.text.trim(),
+                    unit: unitCtrl.text.trim(),
+                    standardPrice: double.tryParse(priceCtrl.text) ?? 0,
+                  );
+                  if (ctx.mounted) Navigator.pop(ctx, true);
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Sửa mẫu hàng thất bại')));
+                  }
+                }
+              },
+              child: const Text('Lưu'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved == true) _load();
+  }
+
+  Future<void> _delete(Product p) async {
+    final api = context.read<ApiClient>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xoá mẫu hàng'),
+        content: Text('Xoá mẫu hàng "${p.name}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Xoá')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ProductService(api).remove(p.id);
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xoá mẫu hàng thất bại')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -226,7 +312,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           child: ListTile(
                             title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                             subtitle: Text('${p.customer.name} · ${formatCurrency(p.standardPrice)}'),
-                            trailing: const Icon(Iconsax.arrow_right_3),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Iconsax.edit_2, size: 18),
+                                  onPressed: () => _showEditDialog(p),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Iconsax.trash, size: 18, color: AppColors.error500),
+                                  onPressed: () => _delete(p),
+                                ),
+                                const Icon(Iconsax.arrow_right_3),
+                              ],
+                            ),
                             onTap: () => _openStages(p),
                           ),
                         );
@@ -335,6 +434,91 @@ class _StagesScreenState extends State<_StagesScreen> {
     if (saved == true) _load();
   }
 
+  Future<void> _showEditDialog(ProcessStage s) async {
+    final nameCtrl = TextEditingController(text: s.name);
+    final priceCtrl = TextEditingController(text: s.unitPrice.toString());
+    String? nameError;
+    String? priceError;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Sửa công đoạn'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(labelText: 'Tên công đoạn', errorText: nameError),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: priceCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: 'Đơn giá', errorText: priceError),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+            ElevatedButton(
+              onPressed: () async {
+                setDialogState(() {
+                  nameError = nameCtrl.text.trim().isEmpty ? 'Nhập tên công đoạn' : null;
+                  priceError = priceCtrl.text.trim().isEmpty ? 'Nhập đơn giá' : null;
+                });
+                if (nameError != null || priceError != null) return;
+                final api = ctx.read<ApiClient>();
+                try {
+                  await ProductService(api).updateStage(
+                    widget.product.id,
+                    s.id,
+                    name: nameCtrl.text.trim(),
+                    unitPrice: double.tryParse(priceCtrl.text) ?? 0,
+                  );
+                  if (ctx.mounted) Navigator.pop(ctx, true);
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Sửa công đoạn thất bại')));
+                  }
+                }
+              },
+              child: const Text('Lưu'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved == true) _load();
+  }
+
+  Future<void> _delete(ProcessStage s) async {
+    final api = context.read<ApiClient>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xoá công đoạn'),
+        content: Text('Xoá công đoạn "${s.name}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Xoá')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ProductService(api).removeStage(widget.product.id, s.id);
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xoá công đoạn thất bại')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -357,8 +541,20 @@ class _StagesScreenState extends State<_StagesScreen> {
                             return Card(
                               child: ListTile(
                                 title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                trailing:
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
                                     Text(formatCurrency(s.unitPrice), style: const TextStyle(color: AppColors.brand600, fontWeight: FontWeight.w600)),
+                                    IconButton(
+                                      icon: const Icon(Iconsax.edit_2, size: 18),
+                                      onPressed: () => _showEditDialog(s),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Iconsax.trash, size: 18, color: AppColors.error500),
+                                      onPressed: () => _delete(s),
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           },

@@ -137,10 +137,10 @@ export default function CustomersPage() {
                   </TableCell>
                   <TableCell className="py-3 px-5">
                     <div className="flex items-center gap-3">
-                      <button onClick={() => openEdit(c)} className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
+                      <button onClick={() => openEdit(c)} title="Sửa" className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
                         <PencilIcon />
                       </button>
-                      <button onClick={() => handleDelete(c)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
+                      <button onClick={() => handleDelete(c)} title="Xoá" className="text-gray-500 hover:text-error-500 dark:text-gray-400">
                         <TrashBinIcon />
                       </button>
                     </div>

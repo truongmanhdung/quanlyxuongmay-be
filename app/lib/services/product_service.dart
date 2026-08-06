@@ -37,8 +37,22 @@ class ProductService {
     return Product.fromJson(res as Map<String, dynamic>);
   }
 
+  Future<Product> update(String id, {required String name, String? unit, double? standardPrice}) async {
+    final res = await api.put('/products/$id', body: {'name': name, 'unit': unit, 'standardPrice': standardPrice});
+    return Product.fromJson(res as Map<String, dynamic>);
+  }
+
+  Future<void> remove(String id) => api.delete('/products/$id');
+
   Future<ProcessStage> createStage(String productId, {required String name, required double unitPrice}) async {
     final res = await api.post('/products/$productId/stages', body: {'name': name, 'unitPrice': unitPrice});
     return ProcessStage.fromJson(res as Map<String, dynamic>);
   }
+
+  Future<ProcessStage> updateStage(String productId, String stageId, {required String name, required double unitPrice}) async {
+    final res = await api.put('/products/$productId/stages/$stageId', body: {'name': name, 'unitPrice': unitPrice});
+    return ProcessStage.fromJson(res as Map<String, dynamic>);
+  }
+
+  Future<void> removeStage(String productId, String stageId) => api.delete('/products/$productId/stages/$stageId');
 }

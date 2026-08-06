@@ -265,10 +265,10 @@ export default function ProductsPage() {
                     <button onClick={() => setStageProduct(p)} className="text-gray-500 hover:text-brand-500 dark:text-gray-400" title="Quản lý công đoạn & đơn giá">
                       <ListIcon />
                     </button>
-                    <button onClick={() => openEdit(p)} className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
+                    <button onClick={() => openEdit(p)} title="Sửa" className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
                       <PencilIcon />
                     </button>
-                    <button onClick={() => handleDelete(p)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
+                    <button onClick={() => handleDelete(p)} title="Xoá" className="text-gray-500 hover:text-error-500 dark:text-gray-400">
                       <TrashBinIcon />
                     </button>
                   </div>
@@ -406,8 +406,10 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; price?: string }>({});
   const [saving, setSaving] = useState(false);
-  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
   const [editingPrice, setEditingPrice] = useState("");
+  const [editingErrors, setEditingErrors] = useState<{ name?: string; price?: string }>({});
 
   async function load() {
     setLoading(true);
@@ -448,13 +450,19 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
     }
   }
 
-  async function handleUpdatePrice(stage: ProcessStage) {
+  async function handleUpdateStage(stage: ProcessStage) {
+    const errors: { name?: string; price?: string } = {};
+    if (!editingName.trim()) errors.name = "Nhập tên công đoạn";
+    if (!editingPrice.trim()) errors.price = "Nhập đơn giá";
+    setEditingErrors(errors);
+    if (errors.name || errors.price) return;
+
     try {
-      await productsApi.updateStage(product._id, stage._id, { unitPrice: Number(editingPrice) });
-      setEditingPriceId(null);
+      await productsApi.updateStage(product._id, stage._id, { name: editingName.trim(), unitPrice: Number(editingPrice) });
+      setEditingId(null);
       await load();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Cập nhật đơn giá thất bại");
+      alert(err instanceof ApiError ? err.message : "Cập nhật công đoạn thất bại");
     }
   }
 
@@ -487,39 +495,57 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
         <div className="space-y-3 mb-5 max-h-64 overflow-y-auto">
           {loading && <p className="text-sm text-gray-400">Đang tải...</p>}
           {!loading && stages.length === 0 && <p className="text-sm text-gray-400">Chưa có công đoạn nào</p>}
-          {stages.map((s) => (
-            <div key={s._id} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 dark:border-gray-800">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{s.name}</span>
-              {editingPriceId === s._id ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    className="!h-9 !w-28"
-                    value={editingPrice}
-                    onChange={(e) => setEditingPrice(e.target.value)}
-                  />
-                  <button onClick={() => handleUpdatePrice(s)} className="text-brand-500 text-sm font-medium">Lưu</button>
-                  <button onClick={() => setEditingPriceId(null)} className="text-gray-400 text-sm">Huỷ</button>
+          {stages.map((s) =>
+            editingId === s._id ? (
+              <div key={s._id} className="rounded-lg border border-gray-200 px-4 py-2.5 dark:border-gray-800">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1">
+                    <Input
+                      className="!h-9"
+                      value={editingName}
+                      error={!!editingErrors.name}
+                      hint={editingErrors.name}
+                      onChange={(e) => setEditingName(e.target.value)}
+                    />
+                  </div>
+                  <div className="w-24">
+                    <Input
+                      type="number"
+                      className="!h-9"
+                      value={editingPrice}
+                      error={!!editingErrors.price}
+                      hint={editingErrors.price}
+                      onChange={(e) => setEditingPrice(e.target.value)}
+                    />
+                  </div>
+                  <button onClick={() => handleUpdateStage(s)} className="mt-2 text-brand-500 text-sm font-medium">Lưu</button>
+                  <button onClick={() => setEditingId(null)} className="mt-2 text-gray-400 text-sm">Huỷ</button>
                 </div>
-              ) : (
+              </div>
+            ) : (
+              <div key={s._id} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 dark:border-gray-800">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{s.name}</span>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-gray-600 dark:text-gray-300">{formatCurrency(s.unitPrice)}</span>
                   <button
                     onClick={() => {
-                      setEditingPriceId(s._id);
+                      setEditingId(s._id);
+                      setEditingName(s.name);
                       setEditingPrice(String(s.unitPrice));
+                      setEditingErrors({});
                     }}
+                    title="Sửa"
                     className="text-gray-500 hover:text-brand-500 dark:text-gray-400"
                   >
                     <PencilIcon />
                   </button>
-                  <button onClick={() => handleRemove(s)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
+                  <button onClick={() => handleRemove(s)} title="Xoá" className="text-gray-500 hover:text-error-500 dark:text-gray-400">
                     <TrashBinIcon />
                   </button>
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            )
+          )}
         </div>
 
         <form onSubmit={handleAdd} className="flex items-start gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
