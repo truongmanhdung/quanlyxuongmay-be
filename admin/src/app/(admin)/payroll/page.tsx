@@ -174,21 +174,29 @@ export default function PayrollPage() {
     },
   ];
 
-  const detailColumns = [
-    { title: "Ngày", dataIndex: "workDate", key: "workDate", render: (v: string) => formatDate(v) },
-    { title: "Mẫu hàng", key: "product", render: (_: unknown, r: PayrollDetail["reports"][number]) => `${r.product.code} — ${r.product.name}` },
-    { title: "Công đoạn", key: "processStage", render: (_: unknown, r: PayrollDetail["reports"][number]) => r.processStage.name },
-    { title: "Số lô", dataIndex: "batchNumber", key: "batchNumber", render: (v?: string) => v || "—" },
-    { title: "SL", dataIndex: "quantity", key: "quantity", align: "right" as const, render: (v: number) => formatNumber(v) },
-    { title: "Đơn giá", dataIndex: "unitPrice", key: "unitPrice", align: "right" as const, render: (v: number) => formatCurrency(v) },
-    { title: "Thành tiền", dataIndex: "amount", key: "amount", align: "right" as const, render: (v: number) => formatCurrency(v) },
-  ];
+  function groupReportsByDay(reports: PayrollDetail["reports"]) {
+    const sorted = [...reports].sort((a, b) => new Date(a.workDate).getTime() - new Date(b.workDate).getTime());
+    const groups: { dateKey: string; date: string; reports: typeof reports; subtotal: number }[] = [];
+    const byKey = new Map<string, (typeof groups)[number]>();
+    sorted.forEach((r) => {
+      const dateKey = r.workDate.slice(0, 10);
+      let group = byKey.get(dateKey);
+      if (!group) {
+        group = { dateKey, date: r.workDate, reports: [], subtotal: 0 };
+        byKey.set(dateKey, group);
+        groups.push(group);
+      }
+      group.reports.push(r);
+      group.subtotal += r.amount;
+    });
+    return groups;
+  }
 
   const comparisonColumns = [
     {
       title: "Mẫu hàng",
       key: "product",
-      render: (_: unknown, r: PayrollDefectComparison["rows"][number]) => (r.product ? `${r.product.code} — ${r.product.name}` : "—"),
+      render: (_: unknown, r: PayrollDefectComparison["rows"][number]) => r.product?.name || "—",
     },
     {
       title: "Công đoạn",
@@ -277,16 +285,47 @@ export default function PayrollPage() {
                   return <div className="py-3 text-sm text-gray-400">Không tải được chi tiết</div>;
                 }
                 const comparison = defectComparisons[workerId];
+                const dayGroups = groupReportsByDay(detail.reports);
                 return (
                   <div className="space-y-4">
-                    <AntTable
-                      rowKey="_id"
-                      size="small"
-                      columns={detailColumns}
-                      dataSource={detail.reports}
-                      pagination={false}
-                      locale={{ emptyText: "Không có báo cáo nào trong kỳ này" }}
-                    />
+                    <div>
+                      <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Chi tiết theo ngày — công đoạn, sản phẩm đã làm
+                      </p>
+                      {dayGroups.length === 0 ? (
+                        <p className="py-3 text-sm text-gray-400">Không có báo cáo nào trong kỳ này</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {dayGroups.map((group) => (
+                            <div key={group.dateKey} className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
+                              <div className="flex items-center justify-between bg-gray-50 px-4 py-2 dark:bg-white/[0.04]">
+                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                  Ngày {formatDate(group.date)}
+                                </span>
+                                <span className="text-sm font-semibold text-brand-600 dark:text-brand-400">
+                                  Cộng ngày: {formatCurrency(group.subtotal)}
+                                </span>
+                              </div>
+                              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                                {group.reports.map((r) => (
+                                  <div key={r._id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                                    <div className="text-gray-700 dark:text-gray-300">
+                                      <span className="font-medium">{r.processStage.name}</span>
+                                      <span className="text-gray-400"> — {r.product.name}</span>
+                                      {r.batchNumber && <span className="text-gray-400"> · Lô {r.batchNumber}</span>}
+                                    </div>
+                                    <div className="whitespace-nowrap text-gray-500 dark:text-gray-400">
+                                      {formatNumber(r.quantity)} × {formatCurrency(r.unitPrice)} ={" "}
+                                      <span className="font-medium text-gray-800 dark:text-white/90">{formatCurrency(r.amount)}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <div>
                       <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                         So sánh với hàng lỗi / hoàn trả (ước tính, không thay đổi lương chính thức)

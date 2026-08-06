@@ -12,6 +12,7 @@ import 'customers_screen.dart';
 import 'defects_screen.dart';
 import 'orders_screen.dart';
 import 'products_screen.dart';
+import 'stock_screen.dart';
 import 'workers_screen.dart';
 
 class ManageScreen extends StatefulWidget {
@@ -100,6 +101,12 @@ class _ManageScreenState extends State<ManageScreen> {
             title: 'Nhập / Xuất',
             subtitle: 'Phiếu nhập, xuất hàng',
             onTap: () => Navigator.of(context).push(slideRoute(const OrdersScreen())),
+          ),
+          _MenuTile(
+            icon: Iconsax.chart_2,
+            title: 'Tồn kho',
+            subtitle: 'Đã nhập, đã xuất, còn lại theo từng khách hàng',
+            onTap: () => Navigator.of(context).push(slideRoute(const StockScreen())),
           ),
           _MenuTile(
             icon: Iconsax.task_square,

@@ -208,6 +208,7 @@ export default function BatchesPage() {
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Mẫu hàng</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Khách hàng</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Tiến độ</TableCell>
+                <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Đã xuất kho</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Trạng thái</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">{""}</TableCell>
               </TableRow>
@@ -215,12 +216,12 @@ export default function BatchesPage() {
             <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading && (
                 <TableRow>
-                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={6}>Đang tải...</TableCell>
+                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={7}>Đang tải...</TableCell>
                 </TableRow>
               )}
               {!loading && batches.length === 0 && (
                 <TableRow>
-                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={6}>Chưa có lô hàng nào</TableCell>
+                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={7}>Chưa có lô hàng nào</TableCell>
                 </TableRow>
               )}
               {batches.map((b) => {
@@ -231,13 +232,20 @@ export default function BatchesPage() {
                 return (
                   <TableRow key={b._id}>
                     <TableCell className="py-3 px-5 font-medium text-gray-800 text-theme-sm dark:text-white/90">{b.code}</TableCell>
-                    <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{b.product.code} — {b.product.name}</TableCell>
+                    <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{b.product.name}</TableCell>
                     <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{b.customer.name}</TableCell>
                     <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">
                       {formatNumber(b.reportedQuantity)}
                       {b.plannedQuantity ? ` / ${formatNumber(b.plannedQuantity)}` : ""}
                       {ready && (
                         <span className="ml-2 text-xs font-medium text-brand-600 dark:text-brand-400">Đủ SL, chờ duyệt</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">
+                      {b.exportedQuantity > 0 ? (
+                        formatNumber(b.exportedQuantity)
+                      ) : (
+                        <span className="text-gray-400">—</span>
                       )}
                     </TableCell>
                     <TableCell className="py-3 px-5">
@@ -288,11 +296,11 @@ export default function BatchesPage() {
             <div>
               <Label>Mẫu hàng {!editing && <span className="text-error-500">*</span>}</Label>
               {editing ? (
-                <Input value={`${editing.product.code} — ${editing.product.name}`} disabled />
+                <Input value={editing.product.name} disabled />
               ) : (
                 <Select
                   placeholder="Chọn mẫu hàng"
-                  options={products.map((p) => ({ value: p._id, label: `${p.code} — ${p.name}` }))}
+                  options={products.map((p) => ({ value: p._id, label: p.name }))}
                   onChange={(value) => setForm({ ...form, product: value })}
                 />
               )}

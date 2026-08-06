@@ -26,7 +26,6 @@ class ProcessStage {
 
 class Product {
   final String id;
-  final String code;
   final String name;
   final CustomerRef customer;
   final String? unit;
@@ -37,7 +36,6 @@ class Product {
 
   Product({
     required this.id,
-    required this.code,
     required this.name,
     required this.customer,
     this.unit,
@@ -49,7 +47,6 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) => Product(
         id: json['_id'] as String,
-        code: json['code'] as String,
         name: json['name'] as String,
         customer: CustomerRef.fromJson(json['customer'] as Map<String, dynamic>),
         unit: json['unit'] as String?,
@@ -64,15 +61,13 @@ class Product {
 
 class ProductRef {
   final String id;
-  final String code;
   final String name;
   final String? unit;
 
-  ProductRef({required this.id, required this.code, required this.name, this.unit});
+  ProductRef({required this.id, required this.name, this.unit});
 
   factory ProductRef.fromJson(Map<String, dynamic> json) => ProductRef(
         id: json['_id'] as String,
-        code: json['code'] as String? ?? '',
         name: json['name'] as String? ?? '',
         unit: json['unit'] as String?,
       );

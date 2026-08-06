@@ -8,7 +8,7 @@ const { periodRange, currentPeriod } = require("../utils/period");
 const { emitToAdmins } = require("../realtime/socket");
 
 const POPULATE = [
-  { path: "product", select: "code name unit" },
+  { path: "product", select: "name unit" },
   { path: "customer", select: "code name" },
   { path: "batch", select: "code" },
   { path: "processStage", select: "name" },
@@ -105,7 +105,7 @@ const summary = asyncHandler(async (req, res) => {
     {
       $project: {
         _id: 0,
-        product: { _id: "$product._id", code: "$product.code", name: "$product.name" },
+        product: { _id: "$product._id", name: "$product.name" },
         type: "$_id.type",
         totalQuantity: 1,
         count: 1,

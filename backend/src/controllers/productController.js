@@ -8,7 +8,7 @@ const list = asyncHandler(async (req, res) => {
   if (customer) filter.customer = customer;
   if (active !== undefined) filter.active = active === "true";
   if (search) {
-    filter.$or = [{ name: new RegExp(search, "i") }, { code: new RegExp(search, "i") }];
+    filter.name = new RegExp(search, "i");
   }
   const products = await Product.find(filter).populate("customer", "code name").sort({ createdAt: -1 });
   res.json(products);
@@ -21,13 +21,35 @@ const getOne = asyncHandler(async (req, res) => {
   res.json({ ...product.toObject(), stages });
 });
 
+// POST { name, customer, unit?, standardPrice?, stages?: [{ name, unitPrice }] }
+// Tao mau hang kem luon cong doan + don gia (khong can them buoc rieng sau do)
 const create = asyncHandler(async (req, res) => {
-  const { code, name, customer, unit, standardPrice } = req.body;
-  if (!code || !name || !customer) {
-    return res.status(400).json({ message: "Thiếu mã hàng, tên hàng hoặc khách hàng" });
+  const { name, customer, unit, standardPrice, stages } = req.body;
+  if (!name || !customer) {
+    return res.status(400).json({ message: "Thiếu tên hàng hoặc khách hàng" });
   }
-  const product = await Product.create({ code, name, customer, unit, standardPrice });
-  res.status(201).json(product);
+  if (Array.isArray(stages)) {
+    const invalid = stages.some((s) => !s?.name || s.unitPrice === undefined || s.unitPrice === null);
+    if (invalid) {
+      return res.status(400).json({ message: "Mỗi công đoạn cần tên và đơn giá" });
+    }
+  }
+
+  const product = await Product.create({ name, customer, unit, standardPrice });
+
+  let createdStages = [];
+  if (Array.isArray(stages) && stages.length > 0) {
+    createdStages = await ProcessStage.insertMany(
+      stages.map((s) => ({
+        product: product._id,
+        name: s.name,
+        unitPrice: s.unitPrice,
+        priceHistory: [{ price: s.unitPrice, changedBy: req.auth.sub }],
+      }))
+    );
+  }
+
+  res.status(201).json({ ...product.toObject(), stages: createdStages });
 });
 
 const update = asyncHandler(async (req, res) => {

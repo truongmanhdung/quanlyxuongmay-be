@@ -8,6 +8,7 @@ import '../../core/socket_service.dart';
 import '../../core/theme.dart';
 import '../../services/notification_service.dart';
 import 'account_screen.dart';
+import 'attendance_screen.dart';
 import 'history_screen.dart';
 import 'submit_screen.dart';
 import 'worker_notifications_screen.dart';
@@ -46,6 +47,7 @@ class _WorkerShellState extends State<WorkerShell> {
   static const _tabs = [
     (outline: Iconsax.add_square, bold: Iconsax.add_square_copy, label: 'Gửi sản lượng'),
     (outline: Iconsax.clock, bold: Iconsax.clock_copy, label: 'Lịch sử'),
+    (outline: Iconsax.calendar_tick, bold: Iconsax.calendar_tick_copy, label: 'Chấm công'),
     (outline: Iconsax.notification, bold: Iconsax.notification_copy, label: 'Thông báo'),
     (outline: Iconsax.profile_circle, bold: Iconsax.profile_circle_copy, label: 'Tài khoản'),
   ];
@@ -84,6 +86,7 @@ class _WorkerShellState extends State<WorkerShell> {
     final screens = [
       const SubmitScreen(),
       const HistoryScreen(),
+      const AttendanceScreen(),
       WorkerNotificationsScreen(onChanged: _refreshUnread),
       const AccountScreen(),
     ];
@@ -102,13 +105,13 @@ class _WorkerShellState extends State<WorkerShell> {
         elevation: 12,
         onTap: (i) {
           setState(() => index = i);
-          if (i == 2) _refreshUnread();
+          if (i == 3) _refreshUnread();
         },
         bottomBarItems: List.generate(_tabs.length, (i) {
           final tab = _tabs[i];
           Widget inActive = Icon(tab.outline, color: AppColors.gray400);
           Widget active = Icon(tab.bold, color: Colors.white);
-          if (i == 2 && unreadCount > 0) {
+          if (i == 3 && unreadCount > 0) {
             inActive = Badge(label: Text('$unreadCount'), child: inActive);
             active = Badge(label: Text('$unreadCount'), child: active);
           }

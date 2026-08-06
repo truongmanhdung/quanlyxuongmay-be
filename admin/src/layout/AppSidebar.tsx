@@ -17,6 +17,7 @@ import {
   ListIcon,
   AlertIcon,
   TimeIcon,
+  CalenderIcon,
 } from "../icons/index";
 
 type NavItem = {
@@ -48,6 +49,11 @@ const navItems: NavItem[] = [
     path: "/workers",
   },
   {
+    icon: <CalenderIcon />,
+    name: "Chấm công",
+    path: "/attendance",
+  },
+  {
     icon: <BoxIconLine />,
     name: "Nhập / Xuất",
     path: "/orders",
@@ -69,7 +75,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <BellIcon />,
-    name: "Thông báo",
+    name: "Duyệt sản lượng",
     path: "/notifications",
   },
   {

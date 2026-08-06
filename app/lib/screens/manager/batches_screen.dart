@@ -244,7 +244,8 @@ class _BatchesScreenState extends State<BatchesScreen> {
                                   subtitle: Text(
                                     '${b.product.name} · ${b.customer.name}\n'
                                     '${formatNumber(b.reportedQuantity)}${b.plannedQuantity != null ? " / ${formatNumber(b.plannedQuantity!)}" : ""}'
-                                    '${ready ? " · Đủ SL, chờ duyệt" : ""}',
+                                    '${ready ? " · Đủ SL, chờ duyệt" : ""}'
+                                    '${b.exportedQuantity > 0 ? " · Đã xuất kho ${formatNumber(b.exportedQuantity)}" : ""}',
                                   ),
                                   isThreeLine: true,
                                   trailing: Column(

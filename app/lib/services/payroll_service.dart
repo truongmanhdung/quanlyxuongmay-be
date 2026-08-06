@@ -15,7 +15,17 @@ class PayrollService {
     return PayrollDetail.fromJson(res as Map<String, dynamic>);
   }
 
-  Future<void> export(String worker, String period) async {
-    await api.post('/payroll/export', body: {'worker': worker, 'period': period});
+  Future<List<PayrollSlip>> listSlips({String? worker, String? period}) async {
+    final res = await api.get('/payroll/slips', query: {'worker': worker ?? '', 'period': period ?? ''});
+    return (res as List<dynamic>).map((e) => PayrollSlip.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<PayrollSlip> export(String worker, String period) async {
+    final res = await api.post('/payroll/export', body: {'worker': worker, 'period': period});
+    return PayrollSlip.fromJson(res as Map<String, dynamic>);
+  }
+
+  Future<List<int>> exportFile(String slipId, String format) {
+    return api.getBytes('/payroll/slips/$slipId/export', query: {'format': format});
   }
 }

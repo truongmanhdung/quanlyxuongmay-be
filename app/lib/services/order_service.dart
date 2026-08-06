@@ -28,4 +28,10 @@ class OrderService {
     });
     return Order.fromJson(res as Map<String, dynamic>);
   }
+
+  Future<List<StockSummaryRow>> stockSummary(String customer) async {
+    final res = await api.get('/orders/stock-summary', query: {'customer': customer});
+    final rows = (res as Map<String, dynamic>)['rows'] as List<dynamic>? ?? [];
+    return rows.map((e) => StockSummaryRow.fromJson(e as Map<String, dynamic>)).toList();
+  }
 }

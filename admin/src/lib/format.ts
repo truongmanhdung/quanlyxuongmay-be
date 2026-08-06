@@ -16,6 +16,10 @@ export function formatDateTime(value: string): string {
   });
 }
 
+export function formatTime(value: string): string {
+  return new Date(value).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+}
+
 export function formatDate(value: string): string {
   return new Date(value).toLocaleDateString("vi-VN", {
     day: "2-digit",

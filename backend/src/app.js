@@ -15,6 +15,7 @@ const batchRoutes = require("./routes/batchRoutes");
 const defectRoutes = require("./routes/defectRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const settingsRoutes = require("./routes/settingsRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
 const { notFound, errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
@@ -45,6 +46,7 @@ app.use("/api/batches", batchRoutes);
 app.use("/api/defects", defectRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/attendance", attendanceRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

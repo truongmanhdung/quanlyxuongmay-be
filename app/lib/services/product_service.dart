@@ -21,18 +21,18 @@ class ProductService {
   }
 
   Future<Product> create({
-    required String code,
     required String name,
     required String customer,
     String? unit,
     double? standardPrice,
+    List<Map<String, dynamic>>? stages,
   }) async {
     final res = await api.post('/products', body: {
-      'code': code,
       'name': name,
       'customer': customer,
       'unit': unit,
       'standardPrice': standardPrice ?? 0,
+      if (stages != null && stages.isNotEmpty) 'stages': stages,
     });
     return Product.fromJson(res as Map<String, dynamic>);
   }

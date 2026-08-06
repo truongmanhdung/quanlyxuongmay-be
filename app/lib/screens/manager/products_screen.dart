@@ -17,6 +17,11 @@ class ProductsScreen extends StatefulWidget {
   State<ProductsScreen> createState() => _ProductsScreenState();
 }
 
+class _StageRowControllers {
+  final nameCtrl = TextEditingController();
+  final priceCtrl = TextEditingController();
+}
+
 class _ProductsScreenState extends State<ProductsScreen> {
   List<Product> products = [];
   List<Customer> customers = [];
@@ -55,63 +60,139 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cần có khách hàng trước khi thêm mẫu hàng')));
       return;
     }
-    final codeCtrl = TextEditingController();
     final nameCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
     Customer selected = customers.first;
+    final stageRows = <_StageRowControllers>[_StageRowControllers()];
+
+    String? nameError;
+    final Map<int, String?> stageNameErrors = {};
+    final Map<int, String?> stagePriceErrors = {};
 
     final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Thêm mẫu hàng'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<Customer>(
-                  initialValue: selected,
-                  decoration: const InputDecoration(labelText: 'Khách hàng'),
-                  items: customers.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
-                  onChanged: (c) => setDialogState(() => selected = c!),
-                ),
-                const SizedBox(height: 10),
-                TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Mã hàng')),
-                const SizedBox(height: 10),
-                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Tên hàng')),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: priceCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Đơn giá chuẩn'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
-            ElevatedButton(
-              onPressed: () async {
-                if (codeCtrl.text.trim().isEmpty || nameCtrl.text.trim().isEmpty) return;
-                final api = ctx.read<ApiClient>();
-                try {
-                  await ProductService(api).create(
-                    code: codeCtrl.text.trim(),
-                    name: nameCtrl.text.trim(),
-                    customer: selected.id,
-                    standardPrice: double.tryParse(priceCtrl.text) ?? 0,
-                  );
-                  if (ctx.mounted) Navigator.pop(ctx, true);
-                } catch (e) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Thêm mẫu hàng thất bại')));
-                  }
+        builder: (ctx, setDialogState) {
+          Future<void> submit() async {
+            setDialogState(() {
+              nameError = nameCtrl.text.trim().isEmpty ? 'Vui lòng nhập tên hàng' : null;
+              stageNameErrors.clear();
+              stagePriceErrors.clear();
+              for (var i = 0; i < stageRows.length; i++) {
+                final hasName = stageRows[i].nameCtrl.text.trim().isNotEmpty;
+                final hasPrice = stageRows[i].priceCtrl.text.trim().isNotEmpty;
+                if (hasName != hasPrice) {
+                  if (!hasName) stageNameErrors[i] = 'Nhập tên công đoạn';
+                  if (!hasPrice) stagePriceErrors[i] = 'Nhập đơn giá';
                 }
-              },
-              child: const Text('Lưu'),
+              }
+            });
+            if (nameError != null || stageNameErrors.isNotEmpty || stagePriceErrors.isNotEmpty) return;
+
+            final api = ctx.read<ApiClient>();
+            try {
+              final stages = <Map<String, dynamic>>[];
+              for (final row in stageRows) {
+                final n = row.nameCtrl.text.trim();
+                final p = row.priceCtrl.text.trim();
+                if (n.isNotEmpty && p.isNotEmpty) {
+                  stages.add({'name': n, 'unitPrice': double.tryParse(p) ?? 0});
+                }
+              }
+              await ProductService(api).create(
+                name: nameCtrl.text.trim(),
+                customer: selected.id,
+                standardPrice: double.tryParse(priceCtrl.text) ?? 0,
+                stages: stages,
+              );
+              if (ctx.mounted) Navigator.pop(ctx, true);
+            } catch (e) {
+              if (ctx.mounted) {
+                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Thêm mẫu hàng thất bại')));
+              }
+            }
+          }
+
+          return AlertDialog(
+            title: const Text('Thêm mẫu hàng'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButtonFormField<Customer>(
+                    initialValue: selected,
+                    decoration: const InputDecoration(labelText: 'Khách hàng'),
+                    items: customers.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
+                    onChanged: (c) => setDialogState(() => selected = c!),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: InputDecoration(labelText: 'Tên hàng', errorText: nameError),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: priceCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Đơn giá chuẩn'),
+                  ),
+                  const SizedBox(height: 18),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Công đoạn & đơn giá', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(height: 8),
+                  ...List.generate(stageRows.length, (i) {
+                    final row = stageRows[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: row.nameCtrl,
+                              decoration: InputDecoration(labelText: 'Tên công đoạn', errorText: stageNameErrors[i]),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 90,
+                            child: TextField(
+                              controller: row.priceCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(labelText: 'Đơn giá', errorText: stagePriceErrors[i]),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Iconsax.trash, size: 18),
+                            onPressed: stageRows.length > 1
+                                ? () => setDialogState(() {
+                                      stageRows.removeAt(i);
+                                      stageNameErrors.remove(i);
+                                      stagePriceErrors.remove(i);
+                                    })
+                                : null,
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  TextButton.icon(
+                    onPressed: () => setDialogState(() => stageRows.add(_StageRowControllers())),
+                    icon: const Icon(Iconsax.add, size: 18),
+                    label: const Text('Thêm công đoạn'),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+              ElevatedButton(onPressed: submit, child: const Text('Lưu')),
+            ],
+          );
+        },
       ),
     );
     if (saved == true) _load();
@@ -144,7 +225,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         return Card(
                           child: ListTile(
                             title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                            subtitle: Text('${p.code} · ${p.customer.name} · ${formatCurrency(p.standardPrice)}'),
+                            subtitle: Text('${p.customer.name} · ${formatCurrency(p.standardPrice)}'),
                             trailing: const Icon(Iconsax.arrow_right_3),
                             onTap: () => _openStages(p),
                           ),
@@ -198,17 +279,27 @@ class _StagesScreenState extends State<_StagesScreen> {
   Future<void> _showAddDialog() async {
     final nameCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
+    String? nameError;
+    String? priceError;
     final saved = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
         title: const Text('Thêm công đoạn'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Tên công đoạn')),
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(labelText: 'Tên công đoạn', errorText: nameError),
+              ),
               const SizedBox(height: 10),
-              TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Đơn giá')),
+              TextField(
+                controller: priceCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: 'Đơn giá', errorText: priceError),
+              ),
             ],
           ),
         ),
@@ -216,7 +307,11 @@ class _StagesScreenState extends State<_StagesScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
           ElevatedButton(
             onPressed: () async {
-              if (nameCtrl.text.trim().isEmpty || priceCtrl.text.trim().isEmpty) return;
+              setDialogState(() {
+                nameError = nameCtrl.text.trim().isEmpty ? 'Nhập tên công đoạn' : null;
+                priceError = priceCtrl.text.trim().isEmpty ? 'Nhập đơn giá' : null;
+              });
+              if (nameError != null || priceError != null) return;
               final api = ctx.read<ApiClient>();
               try {
                 await ProductService(api).createStage(
@@ -234,6 +329,7 @@ class _StagesScreenState extends State<_StagesScreen> {
             child: const Text('Lưu'),
           ),
         ],
+        ),
       ),
     );
     if (saved == true) _load();
@@ -242,7 +338,7 @@ class _StagesScreenState extends State<_StagesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.product.code} — ${widget.product.name}')),
+      appBar: AppBar(title: Text(widget.product.name)),
       floatingActionButton: FloatingActionButton(onPressed: _showAddDialog, child: const Icon(Iconsax.add)),
       body: loading
           ? const Center(child: CircularProgressIndicator())

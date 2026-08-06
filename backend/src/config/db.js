@@ -9,6 +9,10 @@ async function connectDB() {
   mongoose.set("strictQuery", true);
   await mongoose.connect(uri);
   console.log(`[db] connected -> ${mongoose.connection.name}`);
+
+  // Bo truong "code" khoi Product (2026-08): xoa index unique cu con sot lai tren DB
+  // vi schema khong con khai bao truong nay nua.
+  await require("../models/Product").syncIndexes();
 }
 
 module.exports = connectDB;

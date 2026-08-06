@@ -242,7 +242,7 @@ export default function DefectsPage() {
                         )}
                         {defects.map((d) => (
                           <TableRow key={d._id}>
-                            <TableCell className="py-3 px-5 font-medium text-gray-800 text-theme-sm dark:text-white/90">{d.product.code} — {d.product.name}</TableCell>
+                            <TableCell className="py-3 px-5 font-medium text-gray-800 text-theme-sm dark:text-white/90">{d.product.name}</TableCell>
                             <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{d.customer.name}</TableCell>
                             <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">
                               {d.processStage || d.worker ? (
@@ -309,7 +309,7 @@ export default function DefectsPage() {
               <Select
                 placeholder="Chọn mẫu hàng"
                 value={form.product}
-                options={products.map((p) => ({ value: p._id, label: `${p.code} — ${p.name}` }))}
+                options={products.map((p) => ({ value: p._id, label: p.name }))}
                 onChange={(value) => setForm({ ...form, product: value, processStage: "", worker: "" })}
               />
             </div>
@@ -443,7 +443,7 @@ function ComparisonPanel({ products }: { products: Product[] }) {
           placeholder="Chọn mẫu hàng"
           className="!w-64"
           value={product}
-          options={products.map((p) => ({ value: p._id, label: `${p.code} — ${p.name}` }))}
+          options={products.map((p) => ({ value: p._id, label: p.name }))}
           onChange={setProduct}
         />
         <DatePicker

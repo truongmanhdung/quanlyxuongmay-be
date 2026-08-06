@@ -10,8 +10,13 @@ export const productsApi = {
     return api.get<Product[]>(`/products${suffix}`);
   },
   get: (id: string) => api.get<Product>(`/products/${id}`),
-  create: (data: { code: string; name: string; customer: string; unit?: string; standardPrice?: number }) =>
-    api.post<Product>("/products", data),
+  create: (data: {
+    name: string;
+    customer: string;
+    unit?: string;
+    standardPrice?: number;
+    stages?: { name: string; unitPrice: number }[];
+  }) => api.post<Product>("/products", data),
   update: (id: string, data: Partial<Pick<Product, "name" | "unit" | "standardPrice" | "active">>) =>
     api.put<Product>(`/products/${id}`, data),
   remove: (id: string) => api.del<void>(`/products/${id}`),

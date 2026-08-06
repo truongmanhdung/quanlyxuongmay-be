@@ -14,7 +14,15 @@ import { Product, ProcessStage, Customer } from "@/lib/types";
 import { ApiError } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 
-const emptyForm = { code: "", name: "", customer: "", unit: "sản phẩm", standardPrice: "0" };
+const emptyForm = { name: "", customer: "", unit: "sản phẩm", standardPrice: "0" };
+
+type StageRow = { name: string; price: string };
+type FormErrors = { name?: string; customer?: string };
+type StageRowErrors = Record<number, { name?: string; price?: string }>;
+
+function emptyStageRow(): StageRow {
+  return { name: "", price: "" };
+}
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,7 +34,10 @@ export default function ProductsPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [stageRows, setStageRows] = useState<StageRow[]>([emptyStageRow()]);
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
+  const [stageRowErrors, setStageRowErrors] = useState<StageRowErrors>({});
 
   const [stageProduct, setStageProduct] = useState<Product | null>(null);
 
@@ -52,6 +63,9 @@ export default function ProductsPage() {
   function openCreate() {
     setEditing(null);
     setForm(emptyForm);
+    setStageRows([emptyStageRow()]);
+    setFieldErrors({});
+    setStageRowErrors({});
     setError(null);
     setIsOpen(true);
   }
@@ -59,35 +73,76 @@ export default function ProductsPage() {
   function openEdit(p: Product) {
     setEditing(p);
     setForm({
-      code: p.code,
       name: p.name,
       customer: p.customer._id,
       unit: p.unit || "sản phẩm",
       standardPrice: String(p.standardPrice || 0),
     });
+    setFieldErrors({});
+    setStageRowErrors({});
     setError(null);
     setIsOpen(true);
   }
 
+  function addStageRow() {
+    setStageRows((rows) => [...rows, emptyStageRow()]);
+  }
+
+  function removeStageRow(idx: number) {
+    setStageRows((rows) => rows.filter((_, i) => i !== idx));
+  }
+
+  function updateStageRow(idx: number, patch: Partial<StageRow>) {
+    setStageRows((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  }
+
+  function validate(): boolean {
+    const errors: FormErrors = {};
+    if (!form.name.trim()) errors.name = "Vui lòng nhập tên hàng";
+    if (!editing && !form.customer) errors.customer = "Vui lòng chọn khách hàng";
+
+    const rowErrors: StageRowErrors = {};
+    if (!editing) {
+      stageRows.forEach((row, idx) => {
+        const hasName = row.name.trim() !== "";
+        const hasPrice = row.price.trim() !== "";
+        if (hasName !== hasPrice) {
+          rowErrors[idx] = {
+            name: !hasName ? "Nhập tên công đoạn" : undefined,
+            price: !hasPrice ? "Nhập đơn giá" : undefined,
+          };
+        }
+      });
+    }
+
+    setFieldErrors(errors);
+    setStageRowErrors(rowErrors);
+    return !errors.name && !errors.customer && Object.keys(rowErrors).length === 0;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!validate()) return;
     setSaving(true);
     setError(null);
     try {
-      const payload = { ...form, standardPrice: Number(form.standardPrice) };
       if (editing) {
         await productsApi.update(editing._id, {
-          name: payload.name,
-          unit: payload.unit,
-          standardPrice: payload.standardPrice,
+          name: form.name,
+          unit: form.unit,
+          standardPrice: Number(form.standardPrice),
         });
       } else {
-        if (!payload.customer) {
-          setError("Vui lòng chọn khách hàng");
-          setSaving(false);
-          return;
-        }
-        await productsApi.create(payload);
+        const stages = stageRows
+          .filter((r) => r.name.trim() !== "" && r.price.trim() !== "")
+          .map((r) => ({ name: r.name.trim(), unitPrice: Number(r.price) }));
+        await productsApi.create({
+          name: form.name,
+          customer: form.customer,
+          unit: form.unit,
+          standardPrice: Number(form.standardPrice),
+          stages,
+        });
       }
       setIsOpen(false);
       await load();
@@ -114,11 +169,11 @@ export default function ProductsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Mẫu hàng</h1>
           <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-            Mã hàng gắn với khách hàng, kèm công đoạn và đơn giá
+            Mẫu hàng gắn với khách hàng, kèm công đoạn và đơn giá
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Input placeholder="Tìm theo tên hoặc mã..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="Tìm theo tên..." value={search} onChange={(e) => setSearch(e.target.value)} />
           <Button size="sm" startIcon={<PlusIcon />} onClick={openCreate}>
             Thêm mẫu hàng
           </Button>
@@ -130,7 +185,6 @@ export default function ProductsPage() {
           <Table>
             <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
               <TableRow>
-                <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Mã hàng</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Tên hàng</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Khách hàng</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Đơn giá chuẩn</TableCell>
@@ -141,18 +195,17 @@ export default function ProductsPage() {
             <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading && (
                 <TableRow>
-                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={6}>Đang tải...</TableCell>
+                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={5}>Đang tải...</TableCell>
                 </TableRow>
               )}
               {!loading && products.length === 0 && (
                 <TableRow>
-                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={6}>Chưa có mẫu hàng nào</TableCell>
+                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={5}>Chưa có mẫu hàng nào</TableCell>
                 </TableRow>
               )}
               {products.map((p) => (
                 <TableRow key={p._id}>
-                  <TableCell className="py-3 px-5 font-medium text-gray-800 text-theme-sm dark:text-white/90">{p.code}</TableCell>
-                  <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{p.name}</TableCell>
+                  <TableCell className="py-3 px-5 font-medium text-gray-800 text-theme-sm dark:text-white/90">{p.name}</TableCell>
                   <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{p.customer?.name}</TableCell>
                   <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{formatCurrency(p.standardPrice)}</TableCell>
                   <TableCell className="py-3 px-5">
@@ -178,8 +231,8 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} className="max-w-md m-4">
-        <div className="p-6">
+      <Modal isOpen={isOpen} onClose={() => setIsOpen(false)} className="max-w-lg m-4">
+        <div className="p-6 max-h-[85vh] overflow-y-auto">
           <h3 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90">
             {editing ? "Sửa mẫu hàng" : "Thêm mẫu hàng"}
           </h3>
@@ -190,12 +243,14 @@ export default function ProductsPage() {
               </div>
             )}
             <div>
-              <Label>Mã hàng {!editing && <span className="text-error-500">*</span>}</Label>
-              <Input placeholder="MH001" value={form.code} disabled={!!editing} onChange={(e) => setForm({ ...form, code: e.target.value })} />
-            </div>
-            <div>
               <Label>Tên hàng <span className="text-error-500">*</span></Label>
-              <Input placeholder="Áo sơ mi nam" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Input
+                placeholder="Áo sơ mi nam"
+                value={form.name}
+                error={!!fieldErrors.name}
+                hint={fieldErrors.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
             </div>
             <div>
               <Label>Khách hàng {!editing && <span className="text-error-500">*</span>}</Label>
@@ -204,6 +259,9 @@ export default function ProductsPage() {
               ) : (
                 <Select
                   placeholder="Chọn khách hàng"
+                  value={form.customer}
+                  error={!!fieldErrors.customer}
+                  hint={fieldErrors.customer}
                   options={customers.map((c) => ({ value: c._id, label: `${c.code} — ${c.name}` }))}
                   onChange={(value) => setForm({ ...form, customer: value })}
                 />
@@ -219,6 +277,53 @@ export default function ProductsPage() {
                 <Input type="number" value={form.standardPrice} onChange={(e) => setForm({ ...form, standardPrice: e.target.value })} />
               </div>
             </div>
+
+            {!editing && (
+              <div className="border-t border-gray-200 pt-4 dark:border-gray-800">
+                <Label>Công đoạn & đơn giá</Label>
+                <div className="space-y-3">
+                  {stageRows.map((row, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Cắt, May thân, Đóng gói..."
+                          value={row.name}
+                          error={!!stageRowErrors[idx]?.name}
+                          hint={stageRowErrors[idx]?.name}
+                          onChange={(e) => updateStageRow(idx, { name: e.target.value })}
+                        />
+                      </div>
+                      <div className="w-32">
+                        <Input
+                          type="number"
+                          placeholder="Đơn giá"
+                          value={row.price}
+                          error={!!stageRowErrors[idx]?.price}
+                          hint={stageRowErrors[idx]?.price}
+                          onChange={(e) => updateStageRow(idx, { price: e.target.value })}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeStageRow(idx)}
+                        className="mt-2.5 text-gray-400 hover:text-error-500"
+                        title="Xoá công đoạn này"
+                      >
+                        <TrashBinIcon />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={addStageRow}
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand-500 hover:text-brand-600"
+                >
+                  <PlusIcon /> Thêm công đoạn
+                </button>
+              </div>
+            )}
+
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setIsOpen(false)}>Huỷ</Button>
               <Button type="submit" disabled={saving}>{saving ? "Đang lưu..." : "Lưu"}</Button>
@@ -243,6 +348,7 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; price?: string }>({});
   const [saving, setSaving] = useState(false);
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [editingPrice, setEditingPrice] = useState("");
@@ -266,7 +372,12 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !price) return;
+    const errors: { name?: string; price?: string } = {};
+    if (!name.trim()) errors.name = "Nhập tên công đoạn";
+    if (!price.trim()) errors.price = "Nhập đơn giá";
+    setFieldErrors(errors);
+    if (errors.name || errors.price) return;
+
     setSaving(true);
     setError(null);
     try {
@@ -308,7 +419,7 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
           Công đoạn & đơn giá
         </h3>
         <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">
-          {product.code} — {product.name}
+          {product.name}
         </p>
 
         {error && (
@@ -355,16 +466,29 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
           ))}
         </div>
 
-        <form onSubmit={handleAdd} className="flex items-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
+        <form onSubmit={handleAdd} className="flex items-start gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
           <div className="flex-1">
             <Label>Tên công đoạn mới</Label>
-            <Input placeholder="Cắt, May thân, Đóng gói..." value={name} onChange={(e) => setName(e.target.value)} />
+            <Input
+              placeholder="Cắt, May thân, Đóng gói..."
+              value={name}
+              error={!!fieldErrors.name}
+              hint={fieldErrors.name}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           <div className="w-32">
             <Label>Đơn giá</Label>
-            <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} />
+            <Input
+              type="number"
+              placeholder="0"
+              value={price}
+              error={!!fieldErrors.price}
+              hint={fieldErrors.price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
           </div>
-          <Button type="submit" size="sm" disabled={saving}>Thêm</Button>
+          <Button type="submit" size="sm" className="mt-6.5" disabled={saving}>Thêm</Button>
         </form>
       </div>
     </Modal>

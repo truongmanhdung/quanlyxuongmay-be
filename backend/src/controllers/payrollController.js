@@ -276,13 +276,36 @@ const listSlips = asyncHandler(async (req, res) => {
   res.json(slips);
 });
 
+// Gom cac bao cao trong phieu luong theo tung ngay lam viec, moi ngay tinh cong rieng
+// vd: 27/07 vat so ao 500*300d=150.000d ; 28/07 lam co 200*400d=80.000d -> tong ket
+function groupReportsByDay(reports) {
+  const sorted = [...reports].sort(
+    (a, b) => new Date(a.workDate) - new Date(b.workDate) || new Date(a.createdAt) - new Date(b.createdAt)
+  );
+  const groups = [];
+  const byKey = new Map();
+  sorted.forEach((r) => {
+    const key = new Date(r.workDate).toISOString().slice(0, 10);
+    let group = byKey.get(key);
+    if (!group) {
+      group = { date: r.workDate, reports: [], subtotalQuantity: 0, subtotalAmount: 0 };
+      byKey.set(key, group);
+      groups.push(group);
+    }
+    group.reports.push(r);
+    group.subtotalQuantity += r.quantity;
+    group.subtotalAmount += r.amount;
+  });
+  return groups;
+}
+
 async function loadSlipForFile(id) {
   const slip = await PayrollSlip.findById(id)
     .populate("worker", "code name")
     .populate({
       path: "reports",
       populate: [
-        { path: "product", select: "code name" },
+        { path: "product", select: "name" },
         { path: "processStage", select: "name" },
       ],
     });
@@ -300,41 +323,55 @@ const exportFile = asyncHandler(async (req, res) => {
 
   const fileName = `phieu-luong-${slip.worker.code}-${slip.period}`;
 
+  const dayGroups = groupReportsByDay(slip.reports);
+
   if (format === "xlsx") {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Phiếu lương");
     sheet.columns = [
-      { header: "Ngày", key: "date", width: 12 },
-      { header: "Mẫu hàng", key: "product", width: 22 },
-      { header: "Công đoạn", key: "stage", width: 18 },
-      { header: "Số lô", key: "batch", width: 12 },
-      { header: "Số lượng", key: "quantity", width: 12 },
-      { header: "Đơn giá", key: "unitPrice", width: 14 },
-      { header: "Thành tiền", key: "amount", width: 16 },
+      { key: "col1", width: 24 },
+      { key: "col2", width: 22 },
+      { key: "col3", width: 12 },
+      { key: "col4", width: 12 },
+      { key: "col5", width: 14 },
+      { key: "col6", width: 16 },
     ];
-    sheet.getRow(1).font = { bold: true };
 
-    sheet.addRow([]).values = [];
-    sheet.spliceRows(1, 0, [`Phiếu lương - ${slip.worker.code} - ${slip.worker.name} - Kỳ ${slip.period}`]);
-    sheet.mergeCells("A1:G1");
+    sheet.addRow([`Phiếu lương - ${slip.worker.code} - ${slip.worker.name} - Kỳ ${slip.period}`]);
+    sheet.mergeCells("A1:F1");
     sheet.getRow(1).font = { bold: true, size: 13 };
-    sheet.getRow(2).values = ["Ngày", "Mẫu hàng", "Công đoạn", "Số lô", "Số lượng", "Đơn giá", "Thành tiền"];
-    sheet.getRow(2).font = { bold: true };
+    sheet.addRow([]);
 
-    slip.reports.forEach((r) => {
-      sheet.addRow({
-        date: new Date(r.workDate).toLocaleDateString("vi-VN"),
-        product: r.product ? `${r.product.code} - ${r.product.name}` : "",
-        stage: r.processStage ? r.processStage.name : "",
-        batch: r.batchNumber || "",
-        quantity: r.quantity,
-        unitPrice: r.unitPrice,
-        amount: r.amount,
+    dayGroups.forEach((group) => {
+      const dayHeaderRow = sheet.addRow([`Ngày ${new Date(group.date).toLocaleDateString("vi-VN")}`]);
+      dayHeaderRow.font = { bold: true };
+      dayHeaderRow.eachCell((cell) => {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE9EBF3" } };
       });
+      sheet.mergeCells(`A${dayHeaderRow.number}:F${dayHeaderRow.number}`);
+
+      const headerRow = sheet.addRow(["Công đoạn", "Mẫu hàng", "Số lô", "Số lượng", "Đơn giá", "Thành tiền"]);
+      headerRow.font = { bold: true, italic: true, size: 10 };
+
+      group.reports.forEach((r) => {
+        sheet.addRow([
+          r.processStage ? r.processStage.name : "",
+          r.product ? r.product.name : "",
+          r.batchNumber || "",
+          r.quantity,
+          r.unitPrice,
+          r.amount,
+        ]);
+      });
+
+      const subtotalRow = sheet.addRow(["", "", "", "", "Cộng ngày", group.subtotalAmount]);
+      subtotalRow.font = { bold: true };
+      sheet.addRow([]);
     });
 
-    const totalRow = sheet.addRow({ product: "Tổng cộng", quantity: slip.totalQuantity, amount: slip.totalAmount });
-    totalRow.font = { bold: true };
+    sheet.addRow([]);
+    const totalRow = sheet.addRow(["", "", "", "TỔNG KẾT", slip.totalQuantity, slip.totalAmount]);
+    totalRow.font = { bold: true, size: 12 };
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}.xlsx"`);
@@ -359,53 +396,55 @@ const exportFile = asyncHandler(async (req, res) => {
   doc.moveDown();
 
   const startX = doc.page.margins.left;
-  const tableTop = doc.y;
-  const cols = [
-    { label: "Ngày", width: 60 },
-    { label: "Mẫu hàng", width: 100 },
-    { label: "Công đoạn", width: 90 },
-    { label: "Số lô", width: 60 },
-    { label: "SL", width: 50 },
-    { label: "Đơn giá", width: 70 },
-    { label: "Thành tiền", width: 85 },
-  ];
-  let x = startX;
-  doc.fontSize(9).font("VN-Bold");
-  cols.forEach((c) => {
-    doc.text(c.label, x, tableTop, { width: c.width });
-    x += c.width;
-  });
-  doc.font("VN");
-  let y = tableTop + 16;
+  const contentWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  let y = doc.y;
 
-  slip.reports.forEach((r) => {
-    if (y > 760) {
+  const ensureSpace = (needed) => {
+    if (y > 780 - needed) {
       doc.addPage();
       y = 40;
-      doc.font("VN");
     }
-    x = startX;
-    const row = [
-      new Date(r.workDate).toLocaleDateString("vi-VN"),
-      r.product ? `${r.product.code}` : "",
-      r.processStage ? r.processStage.name : "",
-      r.batchNumber || "",
-      formatNumber(r.quantity),
-      formatCurrency(r.unitPrice),
-      formatCurrency(r.amount),
-    ];
-    row.forEach((val, i) => {
-      doc.text(String(val), x, y, { width: cols[i].width });
-      x += cols[i].width;
+  };
+
+  dayGroups.forEach((group) => {
+    ensureSpace(20);
+    doc.font("VN-Bold").fontSize(11).text(`Ngày ${new Date(group.date).toLocaleDateString("vi-VN")}`, startX, y);
+    y += 18;
+
+    group.reports.forEach((r) => {
+      ensureSpace(15);
+      const label = `${r.processStage ? r.processStage.name : "—"} — ${r.product ? r.product.name : "—"}${
+        r.batchNumber ? ` (Lô ${r.batchNumber})` : ""
+      }`;
+      const calc = `SL ${formatNumber(r.quantity)} × ${formatCurrency(r.unitPrice)} = ${formatCurrency(r.amount)}`;
+      doc.font("VN").fontSize(9.5).text(`•  ${label}`, startX + 10, y, { width: contentWidth - 10 });
+      y = doc.y + 2;
+      doc.font("VN").fontSize(9.5).text(calc, startX + 22, y, { width: contentWidth - 22 });
+      y = doc.y + 6;
     });
-    y += 16;
+
+    ensureSpace(16);
+    doc
+      .font("VN-Bold")
+      .fontSize(9.5)
+      .text(`Cộng ngày: ${formatCurrency(group.subtotalAmount)}`, startX, y, { width: contentWidth, align: "right" });
+    y += 20;
   });
 
-  y += 10;
-  doc.font("VN-Bold");
-  doc.text(`Tổng số lượng: ${formatNumber(slip.totalQuantity)}`, startX, y);
-  y += 16;
-  doc.text(`Tổng lương: ${formatCurrency(slip.totalAmount)}`, startX, y);
+  ensureSpace(60);
+  y += 6;
+  doc
+    .moveTo(startX, y)
+    .lineTo(startX + contentWidth, y)
+    .strokeColor("#888888")
+    .stroke();
+  y += 12;
+
+  doc.font("VN-Bold").fontSize(13).text("TỔNG KẾT", startX, y);
+  y += 20;
+  doc.font("VN-Bold").fontSize(11).text(`Tổng số lượng: ${formatNumber(slip.totalQuantity)}`, startX, y);
+  y += 18;
+  doc.font("VN-Bold").fontSize(13).text(`Tổng lương: ${formatCurrency(slip.totalAmount)}`, startX, y);
 
   doc.end();
 });

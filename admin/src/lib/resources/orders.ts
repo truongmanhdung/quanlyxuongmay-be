@@ -16,7 +16,7 @@ export const ordersApi = {
     customer: string;
     date?: string;
     note?: string;
-    details?: { product: string; quantity: number; unitPrice?: number }[];
+    details?: { product: string; batch?: string; quantity: number; unitPrice?: number }[];
   }) => api.post<Order>("/orders", data),
   update: (id: string, data: Partial<Order>) => api.put<Order>(`/orders/${id}`, data),
   remove: (id: string) => api.del<void>(`/orders/${id}`),

@@ -6,7 +6,7 @@ const { emitToAdmins, emitToWorker } = require("../realtime/socket");
 const POPULATE = [
   { path: "worker", select: "code name" },
   { path: "customer", select: "code name" },
-  { path: "product", select: "code name unit" },
+  { path: "product", select: "name unit" },
   { path: "processStage", select: "name unitPrice" },
 ];
 

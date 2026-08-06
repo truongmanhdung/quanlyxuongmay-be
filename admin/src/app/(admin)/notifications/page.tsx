@@ -86,9 +86,9 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Thông báo</h1>
+        <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Duyệt sản lượng</h1>
         <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-          Các lần công nhân gửi sản lượng theo lô hàng, kèm ngày giờ gửi cụ thể
+          Các lần công nhân gửi sản lượng theo lô hàng — xác nhận hoặc từ chối từng báo cáo tại đây
         </p>
       </div>
 

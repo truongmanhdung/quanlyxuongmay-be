@@ -21,7 +21,9 @@ const list = asyncHandler(async (req, res) => {
 const getOne = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate("customer", "code name");
   if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-  const details = await OrderDetail.find({ order: order._id }).populate("product", "code name unit");
+  const details = await OrderDetail.find({ order: order._id })
+    .populate("product", "code name unit")
+    .populate("batch", "code");
   res.json({ ...order.toObject(), details });
 });
 
@@ -60,7 +62,7 @@ const create = asyncHandler(async (req, res) => {
       if (requestedQty > remaining) {
         const product = await Product.findById(productId);
         return res.status(400).json({
-          message: `Xuất vượt quá tồn kho mã hàng ${product ? product.code : productId} (còn lại: ${remaining})`,
+          message: `Xuất vượt quá tồn kho mẫu hàng ${product ? product.name : productId} (còn lại: ${remaining})`,
         });
       }
     }
@@ -71,7 +73,13 @@ const create = asyncHandler(async (req, res) => {
   let createdDetails = [];
   if (Array.isArray(details) && details.length > 0) {
     createdDetails = await OrderDetail.insertMany(
-      details.map((d) => ({ order: order._id, product: d.product, quantity: d.quantity, unitPrice: d.unitPrice || 0 }))
+      details.map((d) => ({
+        order: order._id,
+        product: d.product,
+        batch: d.batch || undefined,
+        quantity: d.quantity,
+        unitPrice: d.unitPrice || 0,
+      }))
     );
   }
   res.status(201).json({ ...order.toObject(), details: createdDetails });
@@ -98,7 +106,7 @@ const remove = asyncHandler(async (req, res) => {
 // ---- Chi tiet don hang ----
 
 const addDetail = asyncHandler(async (req, res) => {
-  const { product, quantity, unitPrice } = req.body;
+  const { product, batch, quantity, unitPrice } = req.body;
   if (!product || quantity === undefined) {
     return res.status(400).json({ message: "Thiếu mã hàng hoặc số lượng" });
   }
@@ -110,17 +118,23 @@ const addDetail = asyncHandler(async (req, res) => {
     if (Number(quantity) > remaining) {
       const productDoc = await Product.findById(product);
       return res.status(400).json({
-        message: `Xuất vượt quá tồn kho mã hàng ${productDoc ? productDoc.code : product} (còn lại: ${remaining})`,
+        message: `Xuất vượt quá tồn kho mẫu hàng ${productDoc ? productDoc.name : product} (còn lại: ${remaining})`,
       });
     }
   }
 
-  const detail = await OrderDetail.create({ order: req.params.id, product, quantity, unitPrice: unitPrice || 0 });
+  const detail = await OrderDetail.create({
+    order: req.params.id,
+    product,
+    batch: batch || undefined,
+    quantity,
+    unitPrice: unitPrice || 0,
+  });
   res.status(201).json(detail);
 });
 
 const updateDetail = asyncHandler(async (req, res) => {
-  const { quantity, unitPrice } = req.body;
+  const { quantity, unitPrice, batch } = req.body;
   const existing = await OrderDetail.findOne({ _id: req.params.detailId, order: req.params.id });
   if (!existing) return res.status(404).json({ message: "Không tìm thấy chi tiết đơn hàng" });
 
@@ -133,7 +147,7 @@ const updateDetail = asyncHandler(async (req, res) => {
       if (Number(quantity) > remainingWithoutThisLine) {
         const productDoc = await Product.findById(existing.product);
         return res.status(400).json({
-          message: `Xuất vượt quá tồn kho mã hàng ${productDoc ? productDoc.code : existing.product} (còn lại: ${remainingWithoutThisLine})`,
+          message: `Xuất vượt quá tồn kho mẫu hàng ${productDoc ? productDoc.name : existing.product} (còn lại: ${remainingWithoutThisLine})`,
         });
       }
     }
@@ -141,7 +155,7 @@ const updateDetail = asyncHandler(async (req, res) => {
 
   const detail = await OrderDetail.findOneAndUpdate(
     { _id: req.params.detailId, order: req.params.id },
-    { $set: { quantity, unitPrice } },
+    { $set: { quantity, unitPrice, ...(batch !== undefined ? { batch: batch || null } : {}) } },
     { new: true, runValidators: true }
   );
   res.json(detail);
@@ -189,7 +203,7 @@ const stockSummary = asyncHandler(async (req, res) => {
     {
       $project: {
         _id: 0,
-        product: { _id: "$product._id", code: "$product.code", name: "$product.name", unit: "$product.unit" },
+        product: { _id: "$product._id", name: "$product.name", unit: "$product.unit" },
         byType: 1,
       },
     },
@@ -201,7 +215,7 @@ const stockSummary = asyncHandler(async (req, res) => {
       const exported = r.byType.find((t) => t.type === "xuat")?.total || 0;
       return { product: r.product, imported, exported, remaining: imported - exported };
     })
-    .sort((a, b) => a.product.code.localeCompare(b.product.code));
+    .sort((a, b) => a.product.name.localeCompare(b.product.name));
 
   res.json({ customer, rows: summary });
 });

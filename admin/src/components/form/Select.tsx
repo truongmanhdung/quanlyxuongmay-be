@@ -15,6 +15,8 @@ interface SelectProps {
   value?: string;
   allowClear?: boolean;
   disabled?: boolean;
+  error?: boolean;
+  hint?: string;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -26,21 +28,29 @@ const Select: React.FC<SelectProps> = ({
   value,
   allowClear = true,
   disabled,
+  error = false,
+  hint,
 }) => {
   return (
-    <AntSelect
-      className={`w-full ${className}`}
-      style={{ height: 44, width: "100%" }}
-      placeholder={placeholder}
-      value={value !== undefined ? value || undefined : undefined}
-      defaultValue={defaultValue || undefined}
-      disabled={disabled}
-      allowClear={allowClear}
-      showSearch={{ optionFilterProp: "label" }}
-      onChange={(val) => onChange((val as string) || "")}
-      onClear={() => onChange("")}
-      options={options.map((o) => ({ value: o.value, label: o.label }))}
-    />
+    <div>
+      <AntSelect
+        className={`w-full ${className}`}
+        style={{ height: 44, width: "100%" }}
+        placeholder={placeholder}
+        value={value !== undefined ? value || undefined : undefined}
+        defaultValue={defaultValue || undefined}
+        disabled={disabled}
+        status={error ? "error" : undefined}
+        allowClear={allowClear}
+        showSearch={{ optionFilterProp: "label" }}
+        onChange={(val) => onChange((val as string) || "")}
+        onClear={() => onChange("")}
+        options={options.map((o) => ({ value: o.value, label: o.label }))}
+      />
+      {hint && (
+        <p className={`mt-1.5 text-xs ${error ? "text-error-500" : "text-gray-500"}`}>{hint}</p>
+      )}
+    </div>
   );
 };
 

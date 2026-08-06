@@ -73,7 +73,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thông báo'),
+        title: const Text('Duyệt sản lượng'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Padding(

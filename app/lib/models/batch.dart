@@ -34,6 +34,7 @@ class Batch {
   final BatchStatus status;
   final String? note;
   final double reportedQuantity;
+  final double exportedQuantity;
 
   Batch({
     required this.id,
@@ -44,6 +45,7 @@ class Batch {
     required this.status,
     this.note,
     required this.reportedQuantity,
+    this.exportedQuantity = 0,
   });
 
   factory Batch.fromJson(Map<String, dynamic> json) => Batch(
@@ -55,5 +57,6 @@ class Batch {
         status: batchStatusFromString(json['status'] as String? ?? 'dang_lam'),
         note: json['note'] as String?,
         reportedQuantity: (json['reportedQuantity'] as num?)?.toDouble() ?? 0,
+        exportedQuantity: (json['exportedQuantity'] as num?)?.toDouble() ?? 0,
       );
 }

@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema(
   {
-    code: { type: String, required: true, unique: true, trim: true, uppercase: true }, // ma_hang
     name: { type: String, required: true, trim: true }, // ten_hang
     customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
     unit: { type: String, trim: true, default: "san_pham" }, // don vi tinh

@@ -1,13 +1,26 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/api_client.dart';
 import '../../core/format.dart';
 import '../../core/page_transition.dart';
 import '../../core/theme.dart';
 import '../../models/payroll.dart';
+import '../../models/production_report.dart';
 import '../../services/payroll_service.dart';
 import '../../widgets/report_tile.dart';
+
+Map<String, List<ProductionReport>> _groupReportsByDay(List<ProductionReport> reports) {
+  final sorted = [...reports]..sort((a, b) => a.workDate.compareTo(b.workDate));
+  final map = <String, List<ProductionReport>>{};
+  for (final r in sorted) {
+    map.putIfAbsent(formatDate(r.workDate), () => []).add(r);
+  }
+  return map;
+}
 
 class PayrollScreen extends StatefulWidget {
   const PayrollScreen({super.key});
@@ -152,8 +165,10 @@ class PayrollDetailScreen extends StatefulWidget {
 
 class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
   PayrollDetail? detail;
+  PayrollSlip? slip;
   bool loading = true;
   bool exporting = false;
+  String? downloadingFormat;
   String? error;
 
   @override
@@ -169,9 +184,15 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
     });
     final api = context.read<ApiClient>();
     try {
-      final res = await PayrollService(api).detail(widget.period, worker: widget.workerId);
+      final results = await Future.wait([
+        PayrollService(api).detail(widget.period, worker: widget.workerId),
+        PayrollService(api).listSlips(worker: widget.workerId, period: widget.period),
+      ]);
+      final res = results[0] as PayrollDetail;
+      final existingSlips = results[1] as List<PayrollSlip>;
       setState(() {
         detail = res;
+        slip = existingSlips.isNotEmpty ? existingSlips.first : null;
         loading = false;
       });
     } catch (e) {
@@ -186,14 +207,40 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
     setState(() => exporting = true);
     final api = context.read<ApiClient>();
     try {
-      await PayrollService(api).export(widget.workerId, widget.period);
+      final result = await PayrollService(api).export(widget.workerId, widget.period);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã xuất phiếu lương cho ${widget.workerName}')));
+      setState(() => slip = result);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã chốt phiếu lương cho ${widget.workerName}')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xuất phiếu lương thất bại')));
     } finally {
       if (mounted) setState(() => exporting = false);
+    }
+  }
+
+  Future<void> _downloadAndShare(String format) async {
+    final currentSlip = slip;
+    if (currentSlip == null) return;
+    setState(() => downloadingFormat = format);
+    final api = context.read<ApiClient>();
+    try {
+      final bytes = await PayrollService(api).exportFile(currentSlip.id, format);
+      final dir = await getTemporaryDirectory();
+      final ext = format == 'xlsx' ? 'xlsx' : 'pdf';
+      final safeName = widget.workerName.replaceAll(RegExp(r'\s+'), '_');
+      final file = File('${dir.path}/phieu-luong-$safeName-${widget.period}.$ext');
+      await file.writeAsBytes(bytes, flush: true);
+      if (!mounted) return;
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Phiếu lương ${widget.workerName} - kỳ ${widget.period}',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Tải file thất bại')));
+    } finally {
+      if (mounted) setState(() => downloadingFormat = null);
     }
   }
 
@@ -267,13 +314,53 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
                           child: Center(child: Text('Chưa có báo cáo sản lượng trong kỳ này', style: TextStyle(color: AppColors.gray500))),
                         )
                       else
-                        ...detail!.reports.map((r) => ReportTile(report: r)),
+                        ..._groupReportsByDay(detail!.reports).entries.expand((entry) {
+                          final subtotal = entry.value.fold<double>(0, (sum, r) => sum + r.amount);
+                          return [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(4, 10, 4, 6),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Ngày ${entry.key}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                                  Text(
+                                    'Cộng ngày: ${formatCurrency(subtotal)}',
+                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: AppColors.brand600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ...entry.value.map((r) => ReportTile(report: r)),
+                          ];
+                        }),
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
                         onPressed: exporting ? null : _export,
                         icon: const Icon(Iconsax.send, size: 18),
-                        label: Text(exporting ? 'Đang xuất...' : 'Xuất phiếu lương'),
+                        label: Text(exporting ? 'Đang chốt...' : 'Chốt phiếu lương'),
                       ),
+                      if (slip != null) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: downloadingFormat != null ? null : () => _downloadAndShare('pdf'),
+                                icon: const Icon(Iconsax.document_text, size: 18),
+                                label: Text(downloadingFormat == 'pdf' ? 'Đang tải...' : 'Tải PDF'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: downloadingFormat != null ? null : () => _downloadAndShare('xlsx'),
+                                icon: const Icon(Iconsax.document_download, size: 18),
+                                label: Text(downloadingFormat == 'xlsx' ? 'Đang tải...' : 'Tải Excel'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

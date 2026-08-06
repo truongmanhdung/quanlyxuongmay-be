@@ -5,8 +5,13 @@ class BatchService {
   final ApiClient api;
   BatchService(this.api);
 
-  Future<List<Batch>> list({String? status, String? search}) async {
-    final res = await api.get('/batches', query: {'status': status ?? '', 'search': search ?? ''});
+  Future<List<Batch>> list({String? status, String? search, String? customer, String? product}) async {
+    final res = await api.get('/batches', query: {
+      'status': status ?? '',
+      'search': search ?? '',
+      'customer': customer ?? '',
+      'product': product ?? '',
+    });
     return (res as List<dynamic>).map((e) => Batch.fromJson(e as Map<String, dynamic>)).toList();
   }
 

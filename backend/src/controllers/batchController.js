@@ -2,11 +2,12 @@ const Batch = require("../models/Batch");
 const Product = require("../models/Product");
 const Customer = require("../models/Customer");
 const ProductionReport = require("../models/ProductionReport");
+const OrderDetail = require("../models/OrderDetail");
 const asyncHandler = require("../utils/asyncHandler");
 const { emitToAdmins } = require("../realtime/socket");
 
 const POPULATE = [
-  { path: "product", select: "code name unit" },
+  { path: "product", select: "name unit" },
   { path: "customer", select: "code name" },
 ];
 
@@ -20,6 +21,19 @@ async function reportedQuantityFor(batch) {
         batchNumber: new RegExp(`^${batch.code}$`, "i"),
       },
     },
+    { $group: { _id: null, total: { $sum: "$quantity" } } },
+  ]);
+  return rows[0]?.total || 0;
+}
+
+// So luong da xuat kho gan voi lo nay = tong OrderDetail.quantity co batch = lo nay va thuoc phieu loai "xuat"
+// Cho phep doi chieu: lo san xuat xong roi thi da xuat kho duoc bao nhieu trong so do.
+async function exportedQuantityFor(batch) {
+  const rows = await OrderDetail.aggregate([
+    { $match: { batch: batch._id } },
+    { $lookup: { from: "orders", localField: "order", foreignField: "_id", as: "order" } },
+    { $unwind: "$order" },
+    { $match: { "order.type": "xuat" } },
     { $group: { _id: null, total: { $sum: "$quantity" } } },
   ]);
   return rows[0]?.total || 0;
@@ -39,6 +53,7 @@ const list = asyncHandler(async (req, res) => {
     batches.map(async (b) => ({
       ...b.toObject(),
       reportedQuantity: await reportedQuantityFor(b),
+      exportedQuantity: await exportedQuantityFor(b),
     }))
   );
   res.json(withProgress);
@@ -57,7 +72,12 @@ const getOne = asyncHandler(async (req, res) => {
     .populate("processStage", "name unitPrice")
     .sort({ createdAt: -1 });
 
-  res.json({ ...batch.toObject(), reportedQuantity: await reportedQuantityFor(batch), reports });
+  res.json({
+    ...batch.toObject(),
+    reportedQuantity: await reportedQuantityFor(batch),
+    exportedQuantity: await exportedQuantityFor(batch),
+    reports,
+  });
 });
 
 // POST { code, product, customer, plannedQuantity, note }
@@ -82,7 +102,7 @@ const create = asyncHandler(async (req, res) => {
     createdBy: req.auth.sub,
   });
   const populated = await batch.populate(POPULATE);
-  const withProgress = { ...populated.toObject(), reportedQuantity: 0 };
+  const withProgress = { ...populated.toObject(), reportedQuantity: 0, exportedQuantity: 0 };
   emitToAdmins("batch:new", withProgress);
   res.status(201).json(withProgress);
 });
@@ -99,7 +119,11 @@ const update = asyncHandler(async (req, res) => {
     { new: true, runValidators: true }
   ).populate(POPULATE);
   if (!batch) return res.status(404).json({ message: "Không tìm thấy lô hàng" });
-  const withProgress = { ...batch.toObject(), reportedQuantity: await reportedQuantityFor(batch) };
+  const withProgress = {
+    ...batch.toObject(),
+    reportedQuantity: await reportedQuantityFor(batch),
+    exportedQuantity: await exportedQuantityFor(batch),
+  };
   emitToAdmins("batch:updated", withProgress);
   res.json(withProgress);
 });
@@ -112,7 +136,11 @@ const complete = asyncHandler(async (req, res) => {
     { new: true }
   ).populate(POPULATE);
   if (!batch) return res.status(404).json({ message: "Không tìm thấy lô hàng" });
-  const withProgress = { ...batch.toObject(), reportedQuantity: await reportedQuantityFor(batch) };
+  const withProgress = {
+    ...batch.toObject(),
+    reportedQuantity: await reportedQuantityFor(batch),
+    exportedQuantity: await exportedQuantityFor(batch),
+  };
   emitToAdmins("batch:updated", withProgress);
   res.json(withProgress);
 });

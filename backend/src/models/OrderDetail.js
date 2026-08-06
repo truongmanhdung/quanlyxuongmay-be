@@ -5,6 +5,8 @@ const orderDetailSchema = new mongoose.Schema(
   {
     order: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
     product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+    // lo_hang nguon/dich cua dong hang nay - khong bat buoc, dung de doi chieu Lo hang <-> Nhap/Xuat
+    batch: { type: mongoose.Schema.Types.ObjectId, ref: "Batch" },
     quantity: { type: Number, required: true, min: 0 }, // so_luong
     unitPrice: { type: Number, default: 0 }, // don_gia
   },

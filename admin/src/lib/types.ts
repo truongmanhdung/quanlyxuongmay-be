@@ -10,13 +10,11 @@ export interface Customer {
 
 export interface ProductRef {
   _id: string;
-  code: string;
   name: string;
 }
 
 export interface Product {
   _id: string;
-  code: string;
   name: string;
   customer: { _id: string; code: string; name: string };
   unit?: string;
@@ -48,7 +46,8 @@ export interface Worker {
 export interface OrderDetail {
   _id: string;
   order: string;
-  product: { _id: string; code: string; name: string; unit?: string } | string;
+  product: { _id: string; name: string; unit?: string } | string;
+  batch?: { _id: string; code: string } | string | null;
   quantity: number;
   unitPrice: number;
   amount?: number;
@@ -72,7 +71,7 @@ export interface StockInfo {
 }
 
 export interface StockSummaryRow extends StockInfo {
-  product: { _id: string; code: string; name: string; unit?: string };
+  product: { _id: string; name: string; unit?: string };
 }
 
 export interface StockSummary {
@@ -84,7 +83,7 @@ export interface ProductionReport {
   _id: string;
   worker: { _id: string; code: string; name: string };
   customer: { _id: string; code: string; name: string };
-  product: { _id: string; code: string; name: string; unit?: string };
+  product: { _id: string; name: string; unit?: string };
   processStage: { _id: string; name: string; unitPrice: number };
   batchNumber?: string;
   quantity: number;
@@ -119,7 +118,7 @@ export interface PayrollDetail {
 }
 
 export interface PayrollDefectComparisonRow {
-  product: { _id: string; code: string; name: string } | null;
+  product: { _id: string; name: string } | null;
   processStage: { _id: string; name: string } | null;
   declaredQuantity: number;
   declaredAmount: number;
@@ -139,12 +138,13 @@ export interface PayrollDefectComparison {
 export interface Batch {
   _id: string;
   code: string;
-  product: { _id: string; code: string; name: string; unit?: string };
+  product: { _id: string; name: string; unit?: string };
   customer: { _id: string; code: string; name: string };
   plannedQuantity?: number;
   status: "dang_lam" | "chua_hoan_thanh" | "hoan_thanh";
   note?: string;
   reportedQuantity: number;
+  exportedQuantity: number;
   completedAt?: string;
   createdAt: string;
 }
@@ -156,7 +156,7 @@ export interface BatchDetail extends Batch {
 export interface DefectReport {
   _id: string;
   batch?: { _id: string; code: string };
-  product: { _id: string; code: string; name: string };
+  product: { _id: string; name: string };
   customer: { _id: string; code: string; name: string };
   processStage?: { _id: string; name: string };
   worker?: { _id: string; code: string; name: string };
@@ -171,7 +171,7 @@ export interface DefectSummary {
   period: string;
   totalHong: number;
   totalTraLai: number;
-  rows: { product: { _id: string; code: string; name: string }; type: "hong" | "tra_lai"; totalQuantity: number; count: number }[];
+  rows: { product: { _id: string; name: string }; type: "hong" | "tra_lai"; totalQuantity: number; count: number }[];
 }
 
 export interface DefectComparisonRow {
@@ -211,6 +211,34 @@ export interface ReminderSetting {
   enabled: boolean;
   times: string[];
   message: string;
+}
+
+export interface AttendanceRecord {
+  _id: string;
+  worker: { _id: string; code: string; name: string };
+  date: string;
+  checkInAt?: string;
+  checkOutAt?: string;
+}
+
+export interface AttendanceDayRow {
+  worker: Worker;
+  attendance: AttendanceRecord | null;
+}
+
+export interface AttendanceDayView {
+  date: string;
+  rows: AttendanceDayRow[];
+}
+
+export interface AttendanceSummaryRow {
+  worker: Worker | null;
+  daysPresent: number;
+}
+
+export interface AttendanceSummary {
+  period: string;
+  rows: AttendanceSummaryRow[];
 }
 
 export interface DashboardOverview {

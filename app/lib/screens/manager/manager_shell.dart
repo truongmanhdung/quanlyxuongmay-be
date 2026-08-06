@@ -33,7 +33,7 @@ class _ManagerShellState extends State<ManagerShell> {
 
   static const _tabs = [
     (outline: Iconsax.chart_square, bold: Iconsax.chart_square_copy, label: 'Tổng quan'),
-    (outline: Iconsax.notification, bold: Iconsax.notification_copy, label: 'Thông báo'),
+    (outline: Iconsax.notification, bold: Iconsax.notification_copy, label: 'Duyệt sản lượng'),
     (outline: Iconsax.wallet_money, bold: Iconsax.wallet_money_copy, label: 'Tính lương'),
     (outline: Iconsax.setting_2, bold: Iconsax.setting_2_copy, label: 'Quản lý'),
   ];

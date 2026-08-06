@@ -194,7 +194,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
                     initialValue: selectedProduct,
                     hint: Text(loadingProducts ? 'Đang tải...' : 'Chọn mẫu hàng'),
                     items: products
-                        .map((p) => DropdownMenuItem(value: p, child: Text('${p.code} — ${p.name}')))
+                        .map((p) => DropdownMenuItem(value: p, child: Text(p.name)))
                         .toList(),
                     onChanged: selectedCustomer == null ? null : _onProductChanged,
                   ),

@@ -97,4 +97,18 @@ class ApiClient {
     final res = await _withTimeout(http.delete(_uri(path), headers: _headers));
     _handle(res);
   }
+
+  // Tai file nhi phan (PDF/Excel...) kem token dang nhap, khac get() vi khong duoc JSON-decode
+  Future<List<int>> getBytes(String path, {Map<String, String>? query}) async {
+    final res = await _withTimeout(http.get(_uri(path, query), headers: _headers));
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      String message = 'Lỗi ${res.statusCode}';
+      try {
+        final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+        if (decoded is Map && decoded['message'] != null) message = decoded['message'] as String;
+      } catch (_) {}
+      throw ApiException(message, res.statusCode);
+    }
+    return res.bodyBytes;
+  }
 }

@@ -28,7 +28,6 @@ async function seed() {
   if (customerCount === 0) {
     const customer = await Customer.create({ code: "KH001", name: "Công ty May Mẫu A", phone: "0900000001" });
     const product = await Product.create({
-      code: "MH001",
       name: "Áo sơ mi nam",
       customer: customer._id,
       unit: "áo",

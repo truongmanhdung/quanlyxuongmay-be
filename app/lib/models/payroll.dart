@@ -34,6 +34,33 @@ class PayrollSummary {
       );
 }
 
+class PayrollSlip {
+  final String id;
+  final String period;
+  final double totalQuantity;
+  final double totalAmount;
+  final int reportCount;
+  final DateTime issuedAt;
+
+  PayrollSlip({
+    required this.id,
+    required this.period,
+    required this.totalQuantity,
+    required this.totalAmount,
+    required this.reportCount,
+    required this.issuedAt,
+  });
+
+  factory PayrollSlip.fromJson(Map<String, dynamic> json) => PayrollSlip(
+        id: json['_id'] as String,
+        period: json['period'] as String,
+        totalQuantity: (json['totalQuantity'] as num).toDouble(),
+        totalAmount: (json['totalAmount'] as num).toDouble(),
+        reportCount: json['reportCount'] as int? ?? 0,
+        issuedAt: DateTime.parse(json['issuedAt'] as String),
+      );
+}
+
 class PayrollDetail {
   final String period;
   final double totalQuantity;
