@@ -23,20 +23,23 @@ class PayrollRow {
 }
 
 class PayrollSummary {
-  final String period;
+  final String from;
+  final String to;
   final List<PayrollRow> rows;
 
-  PayrollSummary({required this.period, required this.rows});
+  PayrollSummary({required this.from, required this.to, required this.rows});
 
   factory PayrollSummary.fromJson(Map<String, dynamic> json) => PayrollSummary(
-        period: json['period'] as String,
+        from: json['from'] as String,
+        to: json['to'] as String,
         rows: (json['rows'] as List<dynamic>).map((e) => PayrollRow.fromJson(e as Map<String, dynamic>)).toList(),
       );
 }
 
 class PayrollSlip {
   final String id;
-  final String period;
+  final DateTime periodFrom;
+  final DateTime periodTo;
   final double totalQuantity;
   final double totalAmount;
   final int reportCount;
@@ -44,7 +47,8 @@ class PayrollSlip {
 
   PayrollSlip({
     required this.id,
-    required this.period,
+    required this.periodFrom,
+    required this.periodTo,
     required this.totalQuantity,
     required this.totalAmount,
     required this.reportCount,
@@ -53,7 +57,8 @@ class PayrollSlip {
 
   factory PayrollSlip.fromJson(Map<String, dynamic> json) => PayrollSlip(
         id: json['_id'] as String,
-        period: json['period'] as String,
+        periodFrom: DateTime.parse(json['periodFrom'] as String),
+        periodTo: DateTime.parse(json['periodTo'] as String),
         totalQuantity: (json['totalQuantity'] as num).toDouble(),
         totalAmount: (json['totalAmount'] as num).toDouble(),
         reportCount: json['reportCount'] as int? ?? 0,
@@ -62,20 +67,23 @@ class PayrollSlip {
 }
 
 class PayrollDetail {
-  final String period;
+  final String from;
+  final String to;
   final double totalQuantity;
   final double totalAmount;
   final List<ProductionReport> reports;
 
   PayrollDetail({
-    required this.period,
+    required this.from,
+    required this.to,
     required this.totalQuantity,
     required this.totalAmount,
     required this.reports,
   });
 
   factory PayrollDetail.fromJson(Map<String, dynamic> json) => PayrollDetail(
-        period: json['period'] as String,
+        from: json['from'] as String,
+        to: json['to'] as String,
         totalQuantity: (json['totalQuantity'] as num).toDouble(),
         totalAmount: (json['totalAmount'] as num).toDouble(),
         reports: (json['reports'] as List<dynamic>)

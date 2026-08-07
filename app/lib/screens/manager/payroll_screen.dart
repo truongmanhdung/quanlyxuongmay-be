@@ -11,6 +11,7 @@ import '../../core/theme.dart';
 import '../../models/payroll.dart';
 import '../../models/production_report.dart';
 import '../../services/payroll_service.dart';
+import '../../widgets/date_range_filter.dart';
 import '../../widgets/report_tile.dart';
 
 Map<String, List<ProductionReport>> _groupReportsByDay(List<ProductionReport> reports) {
@@ -30,7 +31,7 @@ class PayrollScreen extends StatefulWidget {
 }
 
 class _PayrollScreenState extends State<PayrollScreen> {
-  String period = currentPeriod();
+  DateRange range = DateRange.defaultRange();
   PayrollSummary? summary;
   bool loading = true;
   String? error;
@@ -48,7 +49,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
     });
     final api = context.read<ApiClient>();
     try {
-      final res = await PayrollService(api).summary(period);
+      final res = await PayrollService(api).summary(range.fromIso, range.toIso);
       setState(() {
         summary = res;
         loading = false;
@@ -61,18 +62,8 @@ class _PayrollScreenState extends State<PayrollScreen> {
     }
   }
 
-  Future<void> _pickPeriod() async {
-    final now = DateTime.tryParse('$period-01') ?? DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: DateTime(now.year - 3),
-      lastDate: DateTime(now.year + 1),
-      helpText: 'Chọn kỳ lương',
-      initialDatePickerMode: DatePickerMode.year,
-    );
-    if (picked == null) return;
-    setState(() => period = '${picked.year}-${picked.month.toString().padLeft(2, '0')}');
+  void _changeRange(DateRange next) {
+    setState(() => range = next);
     _load();
   }
 
@@ -81,16 +72,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tính lương'),
-        actions: [
-          TextButton.icon(
-            onPressed: _pickPeriod,
-            icon: const Icon(Iconsax.calendar, color: AppColors.brand500),
-            label: Text(period, style: const TextStyle(color: AppColors.brand500)),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Tính lương')),
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : error != null
@@ -100,6 +82,8 @@ class _PayrollScreenState extends State<PayrollScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
+                      DateRangeFilterButton(range: range, onChanged: _changeRange),
+                      const SizedBox(height: 16),
                       Card(
                         color: AppColors.brand50,
                         child: Padding(
@@ -107,7 +91,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('Tổng lương kỳ $period', style: const TextStyle(color: AppColors.brand700)),
+                              const Text('Tổng lương', style: TextStyle(color: AppColors.brand700)),
                               Text(
                                 formatCurrency(_totalAmount),
                                 style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.brand700, fontSize: 16),
@@ -139,7 +123,7 @@ class _PayrollScreenState extends State<PayrollScreen> {
                                       PayrollDetailScreen(
                                         workerId: r.worker!.id,
                                         workerName: r.worker!.name,
-                                        period: period,
+                                        range: range,
                                       ),
                                     ),
                                   ),
@@ -156,8 +140,8 @@ class _PayrollScreenState extends State<PayrollScreen> {
 class PayrollDetailScreen extends StatefulWidget {
   final String workerId;
   final String workerName;
-  final String period;
-  const PayrollDetailScreen({super.key, required this.workerId, required this.workerName, required this.period});
+  final DateRange range;
+  const PayrollDetailScreen({super.key, required this.workerId, required this.workerName, required this.range});
 
   @override
   State<PayrollDetailScreen> createState() => _PayrollDetailScreenState();
@@ -185,8 +169,8 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
     final api = context.read<ApiClient>();
     try {
       final results = await Future.wait([
-        PayrollService(api).detail(widget.period, worker: widget.workerId),
-        PayrollService(api).listSlips(worker: widget.workerId, period: widget.period),
+        PayrollService(api).detail(widget.range.fromIso, widget.range.toIso, worker: widget.workerId),
+        PayrollService(api).listSlips(worker: widget.workerId, from: widget.range.fromIso, to: widget.range.toIso),
       ]);
       final res = results[0] as PayrollDetail;
       final existingSlips = results[1] as List<PayrollSlip>;
@@ -207,7 +191,7 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
     setState(() => exporting = true);
     final api = context.read<ApiClient>();
     try {
-      final result = await PayrollService(api).export(widget.workerId, widget.period);
+      final result = await PayrollService(api).export(widget.workerId, widget.range.fromIso, widget.range.toIso);
       if (!mounted) return;
       setState(() => slip = result);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã chốt phiếu lương cho ${widget.workerName}')));
@@ -229,12 +213,12 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
       final dir = await getTemporaryDirectory();
       final ext = format == 'xlsx' ? 'xlsx' : 'pdf';
       final safeName = widget.workerName.replaceAll(RegExp(r'\s+'), '_');
-      final file = File('${dir.path}/phieu-luong-$safeName-${widget.period}.$ext');
+      final file = File('${dir.path}/phieu-luong-$safeName-${widget.range.fromIso}_${widget.range.toIso}.$ext');
       await file.writeAsBytes(bytes, flush: true);
       if (!mounted) return;
       await Share.shareXFiles(
         [XFile(file.path)],
-        text: 'Phiếu lương ${widget.workerName} - kỳ ${widget.period}',
+        text: 'Phiếu lương ${widget.workerName} - kỳ ${formatDate(widget.range.from)} - ${formatDate(widget.range.to)}',
       );
     } catch (e) {
       if (!mounted) return;
@@ -253,7 +237,10 @@ class _PayrollDetailScreenState extends State<PayrollDetailScreen> {
           preferredSize: const Size.fromHeight(22),
           child: Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: Text('Kỳ lương ${widget.period}', style: const TextStyle(color: AppColors.gray500, fontSize: 12.5)),
+            child: Text(
+              'Kỳ lương ${formatDate(widget.range.from)} - ${formatDate(widget.range.to)}',
+              style: const TextStyle(color: AppColors.gray500, fontSize: 12.5),
+            ),
           ),
         ),
       ),

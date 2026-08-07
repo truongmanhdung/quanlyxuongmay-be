@@ -4,7 +4,7 @@ const ProductionReport = require("../models/ProductionReport");
 const ProcessStage = require("../models/ProcessStage");
 const Worker = require("../models/Worker");
 const asyncHandler = require("../utils/asyncHandler");
-const { periodRange, currentPeriod } = require("../utils/period");
+const { dateRangeFromQuery } = require("../utils/period");
 const { emitToAdmins } = require("../realtime/socket");
 
 const POPULATE = [
@@ -85,11 +85,10 @@ const remove = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
-// GET /api/defects/summary?period=YYYY-MM - tong hop theo mau hang + loai, chi de xem, khong dinh vao luong
+// GET /api/defects/summary?from=YYYY-MM-DD&to=YYYY-MM-DD - tong hop theo mau hang + loai, chi de xem, khong dinh vao luong
 const summary = asyncHandler(async (req, res) => {
-  const period = req.query.period || currentPeriod();
-  const range = periodRange(period);
-  if (!range) return res.status(400).json({ message: "Kỳ không hợp lệ, dùng định dạng YYYY-MM" });
+  const range = dateRangeFromQuery(req.query);
+  if (!range) return res.status(400).json({ message: "Khoảng ngày không hợp lệ" });
 
   const rows = await DefectReport.aggregate([
     { $match: { reportedAt: { $gte: range.start, $lt: range.end } } },
@@ -123,7 +122,7 @@ const summary = asyncHandler(async (req, res) => {
     { totalHong: 0, totalTraLai: 0 }
   );
 
-  res.json({ period, ...totals, rows });
+  res.json({ from: range.from, to: range.to, ...totals, rows });
 });
 
 // GET /api/defects/workers-for-stage?product=&processStage= - cong nhan tung gui bao cao san luong
@@ -138,15 +137,14 @@ const workersForStage = asyncHandler(async (req, res) => {
   res.json(workers);
 });
 
-// GET /api/defects/comparison?product=&period=YYYY-MM
+// GET /api/defects/comparison?product=&from=YYYY-MM-DD&to=YYYY-MM-DD
 // So sanh san luong ke khai (ProductionReport) vs so luong loi/hoan tra (DefectReport co gan
 // cong doan + cong nhan) theo tung (cong doan, cong nhan) cua 1 mau hang trong ky
 const comparison = asyncHandler(async (req, res) => {
   const { product } = req.query;
-  const period = req.query.period || currentPeriod();
-  const range = periodRange(period);
+  const range = dateRangeFromQuery(req.query);
   if (!product) return res.status(400).json({ message: "Thiếu mẫu hàng" });
-  if (!range) return res.status(400).json({ message: "Kỳ không hợp lệ, dùng định dạng YYYY-MM" });
+  if (!range) return res.status(400).json({ message: "Khoảng ngày không hợp lệ" });
 
   const [declaredRows, defectRows] = await Promise.all([
     ProductionReport.aggregate([
@@ -227,7 +225,7 @@ const comparison = asyncHandler(async (req, res) => {
     }))
     .sort((a, b) => (b.defectQuantity || 0) - (a.defectQuantity || 0));
 
-  res.json({ period, product, rows: result });
+  res.json({ from: range.from, to: range.to, product, rows: result });
 });
 
 module.exports = { list, create, update, remove, summary, workersForStage, comparison };

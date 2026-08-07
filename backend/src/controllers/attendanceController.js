@@ -1,14 +1,14 @@
 const Attendance = require("../models/Attendance");
 const Worker = require("../models/Worker");
 const asyncHandler = require("../utils/asyncHandler");
-const { periodRange, currentPeriod } = require("../utils/period");
+const { dateRangeFromQuery } = require("../utils/period");
 const { emitToAdmins } = require("../realtime/socket");
 
 const POPULATE_WORKER = { path: "worker", select: "code name" };
 
 // Chuan hoa ve 00:00 UTC - phai dung UTC (khong dung gio dia phuong server) de nhat quan voi
-// periodRange()/currentPeriod() (utils/period.js) cung tinh theo UTC, neu khong ban ghi "hom nay"
-// se bi lech ra ngoai ky hien tai o cac server co timezone khac UTC (vd Asia/Saigon, UTC+7).
+// dateRangeFromQuery() (utils/period.js) cung tinh theo UTC, neu khong ban ghi "hom nay"
+// se bi lech ra ngoai khoang ngay dang xem o cac server co timezone khac UTC (vd Asia/Saigon, UTC+7).
 function startOfDay(input) {
   if (!input) {
     const now = new Date();
@@ -63,11 +63,10 @@ const today = asyncHandler(async (req, res) => {
   res.json(record || null);
 });
 
-// GET /api/attendance/mine?period=YYYY-MM (worker) - lich su cham cong cua chinh minh
+// GET /api/attendance/mine?from=YYYY-MM-DD&to=YYYY-MM-DD (worker) - lich su cham cong cua chinh minh
 const mine = asyncHandler(async (req, res) => {
-  const period = req.query.period || currentPeriod();
-  const range = periodRange(period);
-  if (!range) return res.status(400).json({ message: "Kỳ không hợp lệ, dùng định dạng YYYY-MM" });
+  const range = dateRangeFromQuery(req.query);
+  if (!range) return res.status(400).json({ message: "Khoảng ngày không hợp lệ" });
 
   const records = await Attendance.find({
     worker: req.auth.sub,
@@ -88,11 +87,10 @@ const day = asyncHandler(async (req, res) => {
   res.json({ date, rows });
 });
 
-// GET /api/attendance/summary?period=YYYY-MM (admin) - so ngay cong (co check-in) tung cong nhan trong ky
+// GET /api/attendance/summary?from=YYYY-MM-DD&to=YYYY-MM-DD (admin) - so ngay cong (co check-in) tung cong nhan trong ky
 const summary = asyncHandler(async (req, res) => {
-  const period = req.query.period || currentPeriod();
-  const range = periodRange(period);
-  if (!range) return res.status(400).json({ message: "Kỳ không hợp lệ, dùng định dạng YYYY-MM" });
+  const range = dateRangeFromQuery(req.query);
+  if (!range) return res.status(400).json({ message: "Khoảng ngày không hợp lệ" });
 
   const [counts, workers] = await Promise.all([
     Attendance.aggregate([
@@ -103,16 +101,15 @@ const summary = asyncHandler(async (req, res) => {
   ]);
   const countMap = new Map(counts.map((c) => [c._id.toString(), c.daysPresent]));
   const rows = workers.map((w) => ({ worker: w, daysPresent: countMap.get(w._id.toString()) || 0 }));
-  res.json({ period, rows });
+  res.json({ from: range.from, to: range.to, rows });
 });
 
-// GET /api/attendance?worker=&period=YYYY-MM (admin) - chi tiet tung ngay cua 1 cong nhan trong ky
+// GET /api/attendance?worker=&from=YYYY-MM-DD&to=YYYY-MM-DD (admin) - chi tiet tung ngay cua 1 cong nhan trong ky
 const list = asyncHandler(async (req, res) => {
   const { worker } = req.query;
-  const period = req.query.period || currentPeriod();
-  const range = periodRange(period);
+  const range = dateRangeFromQuery(req.query);
   if (!worker) return res.status(400).json({ message: "Thiếu công nhân" });
-  if (!range) return res.status(400).json({ message: "Kỳ không hợp lệ, dùng định dạng YYYY-MM" });
+  if (!range) return res.status(400).json({ message: "Khoảng ngày không hợp lệ" });
 
   const records = await Attendance.find({ worker, date: { $gte: range.start, $lt: range.end } }).sort({ date: -1 });
   res.json(records);

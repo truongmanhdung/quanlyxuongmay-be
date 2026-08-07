@@ -95,7 +95,7 @@ export default function ProductsPage() {
     setEditing(p);
     setForm({
       name: p.name,
-      customer: p.customer._id,
+      customer: p.customer?._id ?? "",
       unit: p.unit || "sản phẩm",
       standardPrice: String(p.standardPrice || 0),
     });
@@ -327,7 +327,7 @@ export default function ProductsPage() {
             <div>
               <Label>Khách hàng {!editing && <span className="text-error-500">*</span>}</Label>
               {editing ? (
-                <Input value={editing.customer.name} disabled />
+                <Input value={editing.customer?.name ?? "(khách hàng đã xoá)"} disabled />
               ) : (
                 <Select
                   placeholder="Chọn khách hàng"

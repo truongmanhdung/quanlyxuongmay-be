@@ -1,8 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { Tabs, DatePicker, Table as AntTable, notification } from "antd";
-import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
+import { Tabs, Table as AntTable, notification } from "antd";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
@@ -10,6 +8,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
+import DateRangeFilter from "@/components/common/DateRangeFilter";
 import { PlusIcon, TrashBinIcon } from "@/icons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { defectsApi } from "@/lib/resources/defects";
@@ -18,7 +17,7 @@ import { customersApi } from "@/lib/resources/customers";
 import { workersApi } from "@/lib/resources/workers";
 import { DefectComparisonRow, DefectReport, Product, ProcessStage, Customer, Worker } from "@/lib/types";
 import { ApiError } from "@/lib/api";
-import { formatNumber, formatDateTime, currentPeriod } from "@/lib/format";
+import { formatNumber, formatDateTime, formatDateRangeLabel, defaultDateRange } from "@/lib/format";
 import { getSocket } from "@/lib/socket";
 
 const TYPE_LABEL: Record<DefectReport["type"], string> = {
@@ -47,6 +46,7 @@ export default function DefectsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [typeFilter, setTypeFilter] = useState("");
+  const [{ from, to }, setRange] = useState(defaultDateRange);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totals, setTotals] = useState({ totalHong: 0, totalTraLai: 0 });
@@ -66,7 +66,7 @@ export default function DefectsPage() {
         defectsApi.list({ type: typeFilter || undefined }),
         productsApi.list(),
         customersApi.list(),
-        defectsApi.summary(currentPeriod()),
+        defectsApi.summary(from, to),
       ]);
       setDefects(d);
       setProducts(p);
@@ -82,7 +82,7 @@ export default function DefectsPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typeFilter]);
+  }, [typeFilter, from, to]);
 
   const loadRef = useRef(load);
   loadRef.current = load;
@@ -189,28 +189,31 @@ export default function DefectsPage() {
             label: "Danh sách",
             children: (
               <div className="space-y-6">
-                <div className="flex flex-wrap items-center justify-end gap-3">
-                  <Select
-                    placeholder="Tất cả loại"
-                    className="!w-48"
-                    options={[
-                      { value: "hong", label: "Hàng hỏng" },
-                      { value: "tra_lai", label: "Khách trả lại" },
-                    ]}
-                    onChange={setTypeFilter}
-                  />
-                  <Button size="sm" startIcon={<PlusIcon />} onClick={openCreate}>
-                    Ghi nhận
-                  </Button>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <DateRangeFilter from={from} to={to} onChange={setRange} />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Select
+                      placeholder="Tất cả loại"
+                      className="!w-48"
+                      options={[
+                        { value: "hong", label: "Hàng hỏng" },
+                        { value: "tra_lai", label: "Khách trả lại" },
+                      ]}
+                      onChange={setTypeFilter}
+                    />
+                    <Button size="sm" startIcon={<PlusIcon />} onClick={openCreate}>
+                      Ghi nhận
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Tổng hàng hỏng tháng {currentPeriod()}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Tổng hàng hỏng {formatDateRangeLabel(from, to)}</span>
                     <h4 className="mt-1 font-bold text-gray-800 text-title-sm dark:text-white/90">{formatNumber(totals.totalHong)}</h4>
                   </div>
                   <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Tổng khách trả lại tháng {currentPeriod()}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Tổng khách trả lại {formatDateRangeLabel(from, to)}</span>
                     <h4 className="mt-1 font-bold text-gray-800 text-title-sm dark:text-white/90">{formatNumber(totals.totalTraLai)}</h4>
                   </div>
                 </div>
@@ -246,7 +249,7 @@ export default function DefectsPage() {
                         {defects.map((d) => (
                           <TableRow key={d._id}>
                             <TableCell className="py-3 px-5 font-medium text-gray-800 text-theme-sm dark:text-white/90">{d.product?.name ?? "(mẫu hàng đã xoá)"}</TableCell>
-                            <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{d.customer.name}</TableCell>
+                            <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{d.customer?.name ?? "(khách hàng đã xoá)"}</TableCell>
                             <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">
                               {d.processStage || d.worker ? (
                                 <>
@@ -365,7 +368,7 @@ export default function DefectsPage() {
 
 function ComparisonPanel({ products }: { products: Product[] }) {
   const [product, setProduct] = useState("");
-  const [period, setPeriod] = useState(currentPeriod());
+  const [{ from, to }, setRange] = useState(defaultDateRange);
   const [rows, setRows] = useState<DefectComparisonRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -378,11 +381,11 @@ function ComparisonPanel({ products }: { products: Product[] }) {
     setLoading(true);
     setError(null);
     defectsApi
-      .comparison(product, period)
+      .comparison(product, from, to)
       .then((res) => setRows(res.rows))
       .catch((err) => setError(err instanceof ApiError ? err.message : "Không tải được dữ liệu so sánh"))
       .finally(() => setLoading(false));
-  }, [product, period]);
+  }, [product, from, to]);
 
   // gop nhom hien thi theo cong doan bang rowSpan
   const sorted = [...rows].sort((a, b) => {
@@ -449,14 +452,7 @@ function ComparisonPanel({ products }: { products: Product[] }) {
           options={products.map((p) => ({ value: p._id, label: p.name }))}
           onChange={setProduct}
         />
-        <DatePicker
-          picker="month"
-          format="MM/YYYY"
-          allowClear={false}
-          value={dayjs(`${period}-01`)}
-          onChange={(date: Dayjs | null) => date && setPeriod(date.format("YYYY-MM"))}
-          className="!w-36"
-        />
+        <DateRangeFilter from={from} to={to} onChange={setRange} />
       </div>
 
       {error && <div className="text-error-500 text-sm">{error}</div>}

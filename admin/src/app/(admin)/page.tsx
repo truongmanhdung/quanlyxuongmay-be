@@ -3,20 +3,22 @@ import React, { useEffect, useRef, useState } from "react";
 import StatCard from "@/components/dashboard/StatCard";
 import WeeklyProductionChart from "@/components/dashboard/WeeklyProductionChart";
 import RecentSubmissions from "@/components/dashboard/RecentSubmissions";
+import DateRangeFilter from "@/components/common/DateRangeFilter";
 import { dashboardApi } from "@/lib/resources/dashboard";
 import { DashboardOverview } from "@/lib/types";
-import { formatCurrency, formatNumber, currentPeriod } from "@/lib/format";
+import { formatCurrency, formatNumber, formatDateRangeLabel, defaultDateRange } from "@/lib/format";
 import { DollarLineIcon, BoxIcon, GroupIcon, TaskIcon } from "@/icons";
 import { getSocket } from "@/lib/socket";
 
 export default function DashboardPage() {
+  const [{ from, to }, setRange] = useState(defaultDateRange);
   const [data, setData] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   function load() {
     dashboardApi
-      .overview(currentPeriod())
+      .overview({ from, to })
       .then(setData)
       .catch((err) => setError(err.message || "Không tải được dữ liệu tổng quan"))
       .finally(() => setLoading(false));
@@ -25,7 +27,7 @@ export default function DashboardPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [from, to]);
 
   const loadRef = useRef(load);
   loadRef.current = load;
@@ -50,11 +52,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Tổng quan</h1>
-        <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-          Kỳ {data.period} — cập nhật theo thời gian thực
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Tổng quan</h1>
+          <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
+            {formatDateRangeLabel(data.from, data.to)} — cập nhật theo thời gian thực
+          </p>
+        </div>
+        <DateRangeFilter from={from} to={to} onChange={setRange} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 md:gap-6">
@@ -62,7 +67,7 @@ export default function DashboardPage() {
           icon={<DollarLineIcon className="text-brand-500 size-6" />}
           label="Tổng lương công nhân đã hoàn thành"
           value={formatCurrency(data.totalAmount)}
-          href={`/payroll?period=${data.period}`}
+          href={`/payroll?from=${data.from}&to=${data.to}`}
         />
         <StatCard
           icon={<BoxIcon className="text-brand-500 size-6" />}

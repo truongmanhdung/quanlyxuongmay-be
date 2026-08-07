@@ -20,8 +20,8 @@ class AttendanceService {
     return res == null ? null : Attendance.fromJson(res as Map<String, dynamic>);
   }
 
-  Future<List<Attendance>> mine({String? period}) async {
-    final res = await api.get('/attendance/mine', query: {'period': period ?? ''});
+  Future<List<Attendance>> mine({String? from, String? to}) async {
+    final res = await api.get('/attendance/mine', query: {'from': from ?? '', 'to': to ?? ''});
     return (res as List<dynamic>).map((e) => Attendance.fromJson(e as Map<String, dynamic>)).toList();
   }
 }

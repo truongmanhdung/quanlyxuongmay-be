@@ -16,7 +16,8 @@ export interface ProductRef {
 export interface Product {
   _id: string;
   name: string;
-  customer: { _id: string; code: string; name: string };
+  // co the null neu khach hang bi xoa sau khi tao mau hang
+  customer: { _id: string; code: string; name: string } | null;
   unit?: string;
   standardPrice: number;
   active: boolean;
@@ -106,12 +107,14 @@ export interface PayrollRow {
 }
 
 export interface PayrollSummary {
-  period: string;
+  from: string;
+  to: string;
   rows: PayrollRow[];
 }
 
 export interface PayrollDetail {
-  period: string;
+  from: string;
+  to: string;
   worker: string;
   totalQuantity: number;
   totalAmount: number;
@@ -130,7 +133,8 @@ export interface PayrollDefectComparisonRow {
 }
 
 export interface PayrollDefectComparison {
-  period: string;
+  from: string;
+  to: string;
   worker: string;
   rows: PayrollDefectComparisonRow[];
   totals: { declaredAmount: number; estimatedDefectAmount: number; netAmount: number };
@@ -141,7 +145,8 @@ export interface Batch {
   code: string;
   // co the null neu mau hang bi xoa sau khi tao lo hang
   product: { _id: string; name: string; unit?: string } | null;
-  customer: { _id: string; code: string; name: string };
+  // co the null neu khach hang bi xoa sau khi tao lo hang
+  customer: { _id: string; code: string; name: string } | null;
   plannedQuantity?: number;
   status: "dang_lam" | "chua_hoan_thanh" | "hoan_thanh";
   note?: string;
@@ -159,7 +164,8 @@ export interface DefectReport {
   _id: string;
   batch?: { _id: string; code: string };
   product: { _id: string; name: string } | null;
-  customer: { _id: string; code: string; name: string };
+  // co the null neu khach hang bi xoa sau khi tao bao cao loi
+  customer: { _id: string; code: string; name: string } | null;
   processStage?: { _id: string; name: string };
   worker?: { _id: string; code: string; name: string };
   quantity: number;
@@ -170,7 +176,8 @@ export interface DefectReport {
 }
 
 export interface DefectSummary {
-  period: string;
+  from: string;
+  to: string;
   totalHong: number;
   totalTraLai: number;
   rows: { product: { _id: string; name: string }; type: "hong" | "tra_lai"; totalQuantity: number; count: number }[];
@@ -185,7 +192,8 @@ export interface DefectComparisonRow {
 }
 
 export interface DefectComparison {
-  period: string;
+  from: string;
+  to: string;
   product: string;
   rows: DefectComparisonRow[];
 }
@@ -239,12 +247,14 @@ export interface AttendanceSummaryRow {
 }
 
 export interface AttendanceSummary {
-  period: string;
+  from: string;
+  to: string;
   rows: AttendanceSummaryRow[];
 }
 
 export interface DashboardOverview {
-  period: string;
+  from: string;
+  to: string;
   totalAmount: number;
   totalQuantity: number;
   batchCount: number;

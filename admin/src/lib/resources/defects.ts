@@ -26,9 +26,9 @@ export const defectsApi = {
     data: Partial<Pick<DefectReport, "quantity" | "type" | "reason">> & { processStage?: string; worker?: string }
   ) => api.put<DefectReport>(`/defects/${id}`, data),
   remove: (id: string) => api.del<void>(`/defects/${id}`),
-  summary: (period: string) => api.get<DefectSummary>(`/defects/summary?period=${period}`),
+  summary: (from: string, to: string) => api.get<DefectSummary>(`/defects/summary?from=${from}&to=${to}`),
   workersForStage: (product: string, processStage: string) =>
     api.get<Worker[]>(`/defects/workers-for-stage?product=${product}&processStage=${processStage}`),
-  comparison: (product: string, period: string) =>
-    api.get<DefectComparison>(`/defects/comparison?product=${product}&period=${period}`),
+  comparison: (product: string, from: string, to: string) =>
+    api.get<DefectComparison>(`/defects/comparison?product=${product}&from=${from}&to=${to}`),
 };

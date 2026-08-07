@@ -28,9 +28,16 @@ export function formatDate(value: string): string {
   });
 }
 
-export function currentPeriod(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
+// Khoang ngay mac dinh cho cac bo loc tim kiem: [hom nay - 1 thang, hom nay]
+export function defaultDateRange(): { from: string; to: string } {
+  const toDate = new Date();
+  const fromDate = new Date(toDate);
+  fromDate.setMonth(fromDate.getMonth() - 1);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  return { from: fmt(fromDate), to: fmt(toDate) };
+}
+
+// Nhan hien thi cho 1 khoang ngay, dung chung cho cac trang tim kiem theo tu ngay-den ngay
+export function formatDateRangeLabel(from: string, to: string): string {
+  return `${formatDate(from)} - ${formatDate(to)}`;
 }

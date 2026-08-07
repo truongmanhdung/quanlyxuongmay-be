@@ -5,10 +5,11 @@ import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import Badge from "@/components/ui/badge/Badge";
+import DateRangeFilter from "@/components/common/DateRangeFilter";
 import { attendanceApi } from "@/lib/resources/attendance";
 import { AttendanceDayRow, AttendanceRecord, AttendanceSummaryRow } from "@/lib/types";
 import { ApiError } from "@/lib/api";
-import { formatTime, currentPeriod } from "@/lib/format";
+import { formatTime, defaultDateRange } from "@/lib/format";
 import { getSocket } from "@/lib/socket";
 
 function statusOf(attendance: AttendanceRecord | null): { label: string; color: "light" | "warning" | "success" } {
@@ -138,8 +139,8 @@ function DayTab() {
   );
 }
 
-function MonthTab() {
-  const [period, setPeriod] = useState(() => currentPeriod());
+function RangeTab() {
+  const [{ from, to }, setRange] = useState(defaultDateRange);
   const [rows, setRows] = useState<AttendanceSummaryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -151,7 +152,7 @@ function MonthTab() {
     setError(null);
     setDetails({});
     try {
-      const res = await attendanceApi.summary(period);
+      const res = await attendanceApi.summary(from, to);
       setRows(res.rows);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Không tải được tổng hợp chấm công");
@@ -163,14 +164,14 @@ function MonthTab() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period]);
+  }, [from, to]);
 
   async function handleExpand(expanded: boolean, row: AttendanceSummaryRow) {
     if (!expanded || !row.worker || details[row.worker._id]) return;
     const workerId = row.worker._id;
     setDetailLoading((prev) => ({ ...prev, [workerId]: true }));
     try {
-      const records = await attendanceApi.list(workerId, period);
+      const records = await attendanceApi.list(workerId, from, to);
       setDetails((prev) => ({ ...prev, [workerId]: records }));
     } catch {
       // bo qua, khu vuc mo rong se hien "khong tai duoc"
@@ -196,14 +197,7 @@ function MonthTab() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <DatePicker
-          picker="month"
-          format="MM/YYYY"
-          allowClear={false}
-          value={dayjs(`${period}-01`)}
-          onChange={(date: Dayjs | null) => date && setPeriod(date.format("YYYY-MM"))}
-          className="!w-36"
-        />
+        <DateRangeFilter from={from} to={to} onChange={setRange} />
       </div>
 
       {error && <div className="text-error-500 text-sm">{error}</div>}
@@ -261,7 +255,7 @@ export default function AttendancePage() {
         defaultActiveKey="day"
         items={[
           { key: "day", label: "Theo ngày", children: <DayTab /> },
-          { key: "month", label: "Theo tháng", children: <MonthTab /> },
+          { key: "range", label: "Theo khoảng ngày", children: <RangeTab /> },
         ]}
       />
     </div>

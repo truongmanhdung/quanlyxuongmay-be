@@ -9,7 +9,7 @@ const ProcessStage = require("../models/ProcessStage");
 const PayrollSlip = require("../models/PayrollSlip");
 const Worker = require("../models/Worker");
 const asyncHandler = require("../utils/asyncHandler");
-const { periodRange, currentPeriod } = require("../utils/period");
+const { dateRangeFromQuery } = require("../utils/period");
 const { formatCurrency, formatNumber } = require("../utils/format");
 
 // Be Vietnam Pro: font Unicode co day du dau tieng Viet, thay cho Helvetica chuan cua pdfkit
@@ -69,11 +69,10 @@ async function defectAdjustmentByWorker(range) {
   return perWorker;
 }
 
-// GET /api/payroll/summary?period=YYYY-MM  -> bang luong tat ca cong nhan trong ky (tinh dong)
+// GET /api/payroll/summary?from=YYYY-MM-DD&to=YYYY-MM-DD  -> bang luong tat ca cong nhan trong ky (tinh dong)
 const summary = asyncHandler(async (req, res) => {
-  const period = req.query.period || currentPeriod();
-  const range = periodRange(period);
-  if (!range) return res.status(400).json({ message: "Kỳ lương không hợp lệ, dùng định dạng YYYY-MM" });
+  const range = dateRangeFromQuery(req.query);
+  if (!range) return res.status(400).json({ message: "Khoảng ngày không hợp lệ" });
 
   const [rows, defectByWorker] = await Promise.all([
     ProductionReport.aggregate([
@@ -96,7 +95,8 @@ const summary = asyncHandler(async (req, res) => {
   const workerMap = new Map(workers.map((w) => [w._id.toString(), w]));
 
   res.json({
-    period,
+    from: range.from,
+    to: range.to,
     rows: rows.map((r) => {
       const adj = defectByWorker.get(r._id.toString()) || { defectQuantity: 0, estimatedDefectAmount: 0 };
       return {
@@ -111,11 +111,10 @@ const summary = asyncHandler(async (req, res) => {
   });
 });
 
-// GET /api/payroll?period=YYYY-MM  (worker: chinh minh | admin: query ?worker=)
+// GET /api/payroll?from=YYYY-MM-DD&to=YYYY-MM-DD  (worker: chinh minh | admin: query ?worker=)
 const detail = asyncHandler(async (req, res) => {
-  const period = req.query.period || currentPeriod();
-  const range = periodRange(period);
-  if (!range) return res.status(400).json({ message: "Kỳ lương không hợp lệ, dùng định dạng YYYY-MM" });
+  const range = dateRangeFromQuery(req.query);
+  if (!range) return res.status(400).json({ message: "Khoảng ngày không hợp lệ" });
 
   const workerId = req.auth.role === "worker" ? req.auth.sub : req.query.worker;
   if (!workerId) return res.status(400).json({ message: "Thiếu công nhân cần tính lương" });
@@ -134,18 +133,17 @@ const detail = asyncHandler(async (req, res) => {
   const totalQuantity = reports.reduce((sum, r) => sum + r.quantity, 0);
   const totalAmount = reports.reduce((sum, r) => sum + r.amount, 0);
 
-  res.json({ period, worker: workerId, totalQuantity, totalAmount, reports });
+  res.json({ from: range.from, to: range.to, worker: workerId, totalQuantity, totalAmount, reports });
 });
 
-// GET /api/payroll/defect-comparison?worker=&period=YYYY-MM  (admin)
+// GET /api/payroll/defect-comparison?worker=&from=YYYY-MM-DD&to=YYYY-MM-DD  (admin)
 // So sanh luong ke khai vs luong uoc tinh sau khi tru hang loi/hoan tra, theo tung mau hang + cong doan
 // cua 1 cong nhan. Chi de xem doi chieu, khong lam thay doi so lieu tra luong chinh thuc.
 const defectComparison = asyncHandler(async (req, res) => {
-  const period = req.query.period || currentPeriod();
-  const range = periodRange(period);
+  const range = dateRangeFromQuery(req.query);
   const { worker } = req.query;
   if (!worker) return res.status(400).json({ message: "Thiếu công nhân" });
-  if (!range) return res.status(400).json({ message: "Kỳ lương không hợp lệ, dùng định dạng YYYY-MM" });
+  if (!range) return res.status(400).json({ message: "Khoảng ngày không hợp lệ" });
 
   const workerObjectId = new mongoose.Types.ObjectId(String(worker));
 
@@ -228,15 +226,15 @@ const defectComparison = asyncHandler(async (req, res) => {
     { declaredAmount: 0, estimatedDefectAmount: 0, netAmount: 0 }
   );
 
-  res.json({ period, worker, rows, totals });
+  res.json({ from: range.from, to: range.to, worker, rows, totals });
 });
 
-// POST /api/payroll/export  (admin) { worker, period } -> chot phieu luong
+// POST /api/payroll/export  (admin) { worker, from, to } -> chot phieu luong
 const exportSlip = asyncHandler(async (req, res) => {
-  const { worker, period } = req.body;
-  const range = periodRange(period);
+  const { worker, from, to } = req.body;
+  const range = dateRangeFromQuery({ from, to });
   if (!worker || !range) {
-    return res.status(400).json({ message: "Thiếu công nhân hoặc kỳ lương không hợp lệ" });
+    return res.status(400).json({ message: "Thiếu công nhân hoặc khoảng ngày không hợp lệ" });
   }
 
   const reports = await ProductionReport.find({
@@ -247,12 +245,15 @@ const exportSlip = asyncHandler(async (req, res) => {
 
   const totalQuantity = reports.reduce((sum, r) => sum + r.quantity, 0);
   const totalAmount = reports.reduce((sum, r) => sum + r.amount, 0);
+  const periodFrom = new Date(range.from);
+  const periodTo = new Date(range.to);
 
   const slip = await PayrollSlip.findOneAndUpdate(
-    { worker, period },
+    { worker, periodFrom, periodTo },
     {
       worker,
-      period,
+      periodFrom,
+      periodTo,
       totalQuantity,
       totalAmount,
       reportCount: reports.length,
@@ -266,12 +267,13 @@ const exportSlip = asyncHandler(async (req, res) => {
   res.status(201).json(slip);
 });
 
-// GET /api/payroll/slips?worker=&period=  (admin)
+// GET /api/payroll/slips?worker=&from=YYYY-MM-DD&to=YYYY-MM-DD  (admin)
 const listSlips = asyncHandler(async (req, res) => {
-  const { worker, period } = req.query;
+  const { worker, from, to } = req.query;
   const filter = {};
   if (worker) filter.worker = worker;
-  if (period) filter.period = period;
+  if (from) filter.periodFrom = new Date(from);
+  if (to) filter.periodTo = new Date(to);
   const slips = await PayrollSlip.find(filter).populate("worker", "code name").sort({ issuedAt: -1 });
   res.json(slips);
 });
@@ -299,6 +301,18 @@ function groupReportsByDay(reports) {
   return groups;
 }
 
+function formatPeriodLabel(slip) {
+  const from = new Date(slip.periodFrom).toLocaleDateString("vi-VN");
+  const to = new Date(slip.periodTo).toLocaleDateString("vi-VN");
+  return `${from} - ${to}`;
+}
+
+function periodFileSuffix(slip) {
+  const from = new Date(slip.periodFrom).toISOString().slice(0, 10);
+  const to = new Date(slip.periodTo).toISOString().slice(0, 10);
+  return `${from}_${to}`;
+}
+
 async function loadSlipForFile(id) {
   const slip = await PayrollSlip.findById(id)
     .populate("worker", "code name")
@@ -321,7 +335,7 @@ const exportFile = asyncHandler(async (req, res) => {
   const slip = await loadSlipForFile(req.params.id);
   if (!slip) return res.status(404).json({ message: "Không tìm thấy phiếu lương" });
 
-  const fileName = `phieu-luong-${slip.worker.code}-${slip.period}`;
+  const fileName = `phieu-luong-${slip.worker.code}-${periodFileSuffix(slip)}`;
 
   const dayGroups = groupReportsByDay(slip.reports);
 
@@ -337,7 +351,7 @@ const exportFile = asyncHandler(async (req, res) => {
       { key: "col6", width: 16 },
     ];
 
-    sheet.addRow([`Phiếu lương - ${slip.worker.code} - ${slip.worker.name} - Kỳ ${slip.period}`]);
+    sheet.addRow([`Phiếu lương - ${slip.worker.code} - ${slip.worker.name} - Kỳ ${formatPeriodLabel(slip)}`]);
     sheet.mergeCells("A1:F1");
     sheet.getRow(1).font = { bold: true, size: 13 };
     sheet.addRow([]);
@@ -391,7 +405,7 @@ const exportFile = asyncHandler(async (req, res) => {
   doc.font("VN-Bold").fontSize(16).text("PHIẾU LƯƠNG", { align: "center" });
   doc.moveDown(0.5);
   doc.font("VN").fontSize(11).text(`Công nhân: ${slip.worker.code} - ${slip.worker.name}`);
-  doc.text(`Kỳ lương: ${slip.period}`);
+  doc.text(`Kỳ lương: ${formatPeriodLabel(slip)}`);
   doc.text(`Ngày xuất: ${new Date(slip.issuedAt).toLocaleDateString("vi-VN")}`);
   doc.moveDown();
 

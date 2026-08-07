@@ -15,7 +15,8 @@ class DailyPoint {
 }
 
 class DashboardOverview {
-  final String period;
+  final String from;
+  final String to;
   final double totalAmount;
   final double totalQuantity;
   final int batchCount;
@@ -27,7 +28,8 @@ class DashboardOverview {
   final List<ProductionReport> recentSubmissions;
 
   DashboardOverview({
-    required this.period,
+    required this.from,
+    required this.to,
     required this.totalAmount,
     required this.totalQuantity,
     required this.batchCount,
@@ -40,7 +42,8 @@ class DashboardOverview {
   });
 
   factory DashboardOverview.fromJson(Map<String, dynamic> json) => DashboardOverview(
-        period: json['period'] as String,
+        from: json['from'] as String,
+        to: json['to'] as String,
         totalAmount: (json['totalAmount'] as num).toDouble(),
         totalQuantity: (json['totalQuantity'] as num).toDouble(),
         batchCount: json['batchCount'] as int? ?? 0,

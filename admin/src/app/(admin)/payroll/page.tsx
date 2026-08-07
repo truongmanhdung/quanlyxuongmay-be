@@ -1,19 +1,22 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Table as AntTable, DatePicker, Space, Tooltip, notification } from "antd";
-import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
+import { Table as AntTable, Space, Tooltip, notification } from "antd";
 import Button from "@/components/ui/button/Button";
+import DateRangeFilter from "@/components/common/DateRangeFilter";
 import { PaperPlaneIcon, DownloadIcon, FileIcon } from "@/icons";
 import { payrollApi, PayrollSlip } from "@/lib/resources/payroll";
 import { PayrollDefectComparison, PayrollDetail, PayrollRow } from "@/lib/types";
 import { ApiError } from "@/lib/api";
-import { formatCurrency, formatDate, formatNumber, currentPeriod } from "@/lib/format";
+import { formatCurrency, formatDate, formatNumber, formatDateRangeLabel, defaultDateRange } from "@/lib/format";
 
 export default function PayrollPage() {
   const searchParams = useSearchParams();
-  const [period, setPeriod] = useState(() => searchParams.get("period") || currentPeriod());
+  const [{ from, to }, setRange] = useState(() => {
+    const qFrom = searchParams.get("from");
+    const qTo = searchParams.get("to");
+    return qFrom && qTo ? { from: qFrom, to: qTo } : defaultDateRange();
+  });
   const [rows, setRows] = useState<PayrollRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +32,8 @@ export default function PayrollPage() {
     setDetails({});
     try {
       const [res, existingSlips] = await Promise.all([
-        payrollApi.summary(period),
-        payrollApi.listSlips({ period }),
+        payrollApi.summary(from, to),
+        payrollApi.listSlips({ from, to }),
       ]);
       setRows(res.rows);
       setSlips(Object.fromEntries(existingSlips.map((s) => [s.worker._id, s])));
@@ -44,13 +47,13 @@ export default function PayrollPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period]);
+  }, [from, to]);
 
   async function handleExport(row: PayrollRow) {
     if (!row.worker) return;
     setExportingId(row.worker._id);
     try {
-      const slip = await payrollApi.export(row.worker._id, period);
+      const slip = await payrollApi.export(row.worker._id, from, to);
       setSlips((prev) => ({ ...prev, [row.worker!._id]: slip }));
     } catch (err) {
       notification.error({ message: err instanceof ApiError ? err.message : "Xuất phiếu lương thất bại" });
@@ -63,7 +66,7 @@ export default function PayrollPage() {
     const slip = row.worker && slips[row.worker._id];
     if (!slip) return;
     try {
-      await payrollApi.downloadSlipFile(slip._id, format, `phieu-luong-${row.worker!.code}-${period}.${format}`);
+      await payrollApi.downloadSlipFile(slip._id, format, `phieu-luong-${row.worker!.code}-${from}_${to}.${format}`);
     } catch (err) {
       notification.error({ message: err instanceof ApiError ? err.message : "Tải file thất bại" });
     }
@@ -75,8 +78,8 @@ export default function PayrollPage() {
     setDetailLoading((prev) => ({ ...prev, [workerId]: true }));
     try {
       const [detail, comparison] = await Promise.all([
-        payrollApi.detail(workerId, period),
-        payrollApi.defectComparison(workerId, period),
+        payrollApi.detail(workerId, from, to),
+        payrollApi.defectComparison(workerId, from, to),
       ]);
       setDetails((prev) => ({ ...prev, [workerId]: detail }));
       setDefectComparisons((prev) => ({ ...prev, [workerId]: comparison }));
@@ -247,20 +250,13 @@ export default function PayrollPage() {
             Bảng lương công nhân theo kỳ (sản lượng × đơn giá) — bấm vào từng dòng để xem chi tiết công đoạn
           </p>
         </div>
-        <DatePicker
-          picker="month"
-          format="MM/YYYY"
-          allowClear={false}
-          value={dayjs(`${period}-01`)}
-          onChange={(date: Dayjs | null) => date && setPeriod(date.format("YYYY-MM"))}
-          className="!w-36"
-        />
+        <DateRangeFilter from={from} to={to} onChange={setRange} />
       </div>
 
       {error && <div className="text-error-500 text-sm">{error}</div>}
 
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-        <span className="text-sm text-gray-500 dark:text-gray-400">Tổng lương kỳ {period}</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">Tổng lương {formatDateRangeLabel(from, to)}</span>
         <h4 className="mt-1 font-bold text-gray-800 text-title-sm dark:text-white/90">{formatCurrency(totalAmount)}</h4>
       </div>
 

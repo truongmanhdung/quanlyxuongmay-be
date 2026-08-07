@@ -3,13 +3,12 @@ const Worker = require("../models/Worker");
 const Customer = require("../models/Customer");
 const Product = require("../models/Product");
 const asyncHandler = require("../utils/asyncHandler");
-const { periodRange, currentPeriod } = require("../utils/period");
+const { dateRangeFromQuery } = require("../utils/period");
 
-// GET /api/dashboard/overview?period=YYYY-MM
+// GET /api/dashboard/overview?from=YYYY-MM-DD&to=YYYY-MM-DD
 const overview = asyncHandler(async (req, res) => {
-  const period = req.query.period || currentPeriod();
-  const range = periodRange(period);
-  if (!range) return res.status(400).json({ message: "Kỳ không hợp lệ, dùng định dạng YYYY-MM" });
+  const range = dateRangeFromQuery(req.query);
+  if (!range) return res.status(400).json({ message: "Khoảng ngày không hợp lệ" });
 
   // So ngay hien thi tren bieu do (mac dinh 7, cho phep client xin nhieu hon de xem bieu do day du hon)
   const trendDays = Math.min(Math.max(parseInt(req.query.days, 10) || 7, 1), 90);
@@ -57,7 +56,8 @@ const overview = asyncHandler(async (req, res) => {
   const [totalWorkers, activeCustomers, activeProducts] = counts;
 
   res.json({
-    period,
+    from: range.from,
+    to: range.to,
     totalAmount: agg.totalAmount,
     totalQuantity: agg.totalQuantity,
     batchCount: agg.batchCount,

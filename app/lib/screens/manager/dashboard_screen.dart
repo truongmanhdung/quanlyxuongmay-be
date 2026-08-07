@@ -10,6 +10,7 @@ import '../../core/socket_service.dart';
 import '../../core/theme.dart';
 import '../../models/dashboard.dart';
 import '../../services/dashboard_service.dart';
+import '../../widgets/date_range_filter.dart';
 import '../../widgets/report_tile.dart';
 import '../../widgets/stat_card.dart';
 import 'batches_screen.dart';
@@ -24,6 +25,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  DateRange range = DateRange.defaultRange();
   DashboardOverview? data;
   bool loading = true;
   String? error;
@@ -57,7 +59,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
     final api = context.read<ApiClient>();
     try {
-      final res = await DashboardService(api).overview(period: currentPeriod());
+      final res = await DashboardService(api).overview(from: range.fromIso, to: range.toIso);
       setState(() {
         data = res;
         loading = false;
@@ -68,6 +70,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         loading = false;
       });
     }
+  }
+
+  void _changeRange(DateRange next) {
+    setState(() => range = next);
+    _load();
   }
 
   @override
@@ -85,8 +92,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Row(
                         children: [
-                          Text('Kỳ ${data!.period}', style: const TextStyle(color: AppColors.gray500)),
-                          const Spacer(),
+                          Expanded(child: DateRangeFilterButton(range: range, onChanged: _changeRange)),
+                          const SizedBox(width: 8),
                           _MiniChip(icon: Iconsax.people, value: '${data!.activeCustomers}'),
                           const SizedBox(width: 8),
                           _MiniChip(icon: Iconsax.box, value: '${data!.activeProducts}'),
