@@ -27,7 +27,8 @@ class ProcessStage {
 class Product {
   final String id;
   final String name;
-  final CustomerRef customer;
+  // co the null neu khach hang da bi xoa sau khi tao mau hang
+  final CustomerRef? customer;
   final String? unit;
   final double standardPrice;
   final bool active;
@@ -48,7 +49,7 @@ class Product {
   factory Product.fromJson(Map<String, dynamic> json) => Product(
         id: json['_id'] as String,
         name: json['name'] as String,
-        customer: CustomerRef.fromJson(json['customer'] as Map<String, dynamic>),
+        customer: json['customer'] != null ? CustomerRef.fromJson(json['customer'] as Map<String, dynamic>) : null,
         unit: json['unit'] as String?,
         standardPrice: (json['standardPrice'] as num?)?.toDouble() ?? 0,
         active: json['active'] as bool? ?? true,

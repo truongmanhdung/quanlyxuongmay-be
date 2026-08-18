@@ -28,9 +28,9 @@ String batchStatusLabel(BatchStatus status) {
 class Batch {
   final String id;
   final String code;
-  // co the null neu mau hang da bi xoa sau khi tao lo hang
+  // co the null neu mau hang / khach hang da bi xoa sau khi tao lo hang
   final ProductRef? product;
-  final CustomerRef customer;
+  final CustomerRef? customer;
   final double? plannedQuantity;
   final BatchStatus status;
   final String? note;
@@ -53,7 +53,7 @@ class Batch {
         id: json['_id'] as String,
         code: json['code'] as String,
         product: json['product'] != null ? ProductRef.fromJson(json['product'] as Map<String, dynamic>) : null,
-        customer: CustomerRef.fromJson(json['customer'] as Map<String, dynamic>),
+        customer: json['customer'] != null ? CustomerRef.fromJson(json['customer'] as Map<String, dynamic>) : null,
         plannedQuantity: (json['plannedQuantity'] as num?)?.toDouble(),
         status: batchStatusFromString(json['status'] as String? ?? 'dang_lam'),
         note: json['note'] as String?,

@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Quản lý xưởng may mặc',
+                    'Quản lý xưởng may BÌNH CANH',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,

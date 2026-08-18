@@ -9,9 +9,9 @@ String defectTypeLabel(DefectType type) => type == DefectType.traLai ? 'Khách t
 
 class DefectReport {
   final String id;
-  // co the null neu mau hang da bi xoa sau khi tao bao cao loi
+  // co the null neu mau hang / khach hang da bi xoa sau khi tao bao cao loi
   final ProductRef? product;
-  final CustomerRef customer;
+  final CustomerRef? customer;
   final double quantity;
   final DefectType type;
   final String? reason;
@@ -30,7 +30,7 @@ class DefectReport {
   factory DefectReport.fromJson(Map<String, dynamic> json) => DefectReport(
         id: json['_id'] as String,
         product: json['product'] != null ? ProductRef.fromJson(json['product'] as Map<String, dynamic>) : null,
-        customer: CustomerRef.fromJson(json['customer'] as Map<String, dynamic>),
+        customer: json['customer'] != null ? CustomerRef.fromJson(json['customer'] as Map<String, dynamic>) : null,
         quantity: (json['quantity'] as num).toDouble(),
         type: defectTypeFromString(json['type'] as String? ?? 'hong'),
         reason: json['reason'] as String?,

@@ -35,7 +35,8 @@ class Order {
   final String id;
   final String code;
   final String type; // nhap | xuat
-  final CustomerRef customer;
+  // co the null neu khach hang da bi xoa sau khi tao don hang
+  final CustomerRef? customer;
   final DateTime date;
   final String? note;
   final List<OrderDetail> details;
@@ -54,7 +55,7 @@ class Order {
         id: json['_id'] as String,
         code: json['code'] as String,
         type: json['type'] as String,
-        customer: CustomerRef.fromJson(json['customer'] as Map<String, dynamic>),
+        customer: json['customer'] != null ? CustomerRef.fromJson(json['customer'] as Map<String, dynamic>) : null,
         date: DateTime.parse(json['date'] as String),
         note: json['note'] as String?,
         details: (json['details'] as List<dynamic>? ?? [])

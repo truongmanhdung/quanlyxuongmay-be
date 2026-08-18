@@ -230,7 +230,7 @@ class _DefectsScreenState extends State<DefectsScreen> {
                                 child: ListTile(
                                   title: Text('${d.product?.name ?? "(mẫu hàng đã xoá)"} · ${formatNumber(d.quantity)}', style: const TextStyle(fontWeight: FontWeight.w600)),
                                   subtitle: Text(
-                                    '${d.customer.name}${d.reason != null && d.reason!.isNotEmpty ? " · ${d.reason}" : ""}\n${formatDateTime(d.reportedAt)}',
+                                    '${d.customer?.name ?? "(khách hàng đã xoá)"}${d.reason != null && d.reason!.isNotEmpty ? " · ${d.reason}" : ""}\n${formatDateTime(d.reportedAt)}',
                                   ),
                                   isThreeLine: true,
                                   trailing: PillBadge(

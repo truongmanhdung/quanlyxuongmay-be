@@ -244,7 +244,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               return Card(
                                 child: ListTile(
                                   title: Text(o.code, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                  subtitle: Text('${o.customer.name} · ${formatDate(o.date)}'),
+                                  subtitle: Text('${o.customer?.name ?? "(khách hàng đã xoá)"} · ${formatDate(o.date)}'),
                                   trailing: PillBadge(
                                     label: o.type == 'nhap' ? 'Nhập' : 'Xuất',
                                     color: o.type == 'nhap' ? AppColors.brand600 : AppColors.warning500,

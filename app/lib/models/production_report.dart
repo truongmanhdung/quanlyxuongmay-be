@@ -18,8 +18,8 @@ ReportStatus reportStatusFromString(String value) {
 class ProductionReport {
   final String id;
   final WorkerRef worker;
-  final CustomerRef customer;
-  // co the null neu mau hang / cong doan da bi xoa sau khi bao cao duoc gui
+  // co the null neu khach hang / mau hang / cong doan da bi xoa sau khi bao cao duoc gui
+  final CustomerRef? customer;
   final ProductRef? product;
   final ProcessStageRef? processStage;
   final String? batchNumber;
@@ -48,7 +48,7 @@ class ProductionReport {
   factory ProductionReport.fromJson(Map<String, dynamic> json) => ProductionReport(
         id: json['_id'] as String,
         worker: WorkerRef.fromJson(json['worker'] as Map<String, dynamic>),
-        customer: CustomerRef.fromJson(json['customer'] as Map<String, dynamic>),
+        customer: json['customer'] != null ? CustomerRef.fromJson(json['customer'] as Map<String, dynamic>) : null,
         product: json['product'] != null ? ProductRef.fromJson(json['product'] as Map<String, dynamic>) : null,
         processStage: json['processStage'] != null
             ? ProcessStageRef.fromJson(json['processStage'] as Map<String, dynamic>)

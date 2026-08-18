@@ -47,7 +47,7 @@ class MainApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Quản lý xưởng may mặc',
+        title: 'Quản lý xưởng may BÌNH CANH',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(brightness: Brightness.light),
         darkTheme: buildAppTheme(brightness: Brightness.dark),
@@ -127,7 +127,7 @@ class _StartupLoadingScreenState extends State<_StartupLoadingScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                'Quản lý xưởng may mặc',
+                'Quản lý xưởng may BÌNH CANH',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: isDark ? Colors.white : AppColors.gray900),
               ),
               const SizedBox(height: 24),

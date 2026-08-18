@@ -292,7 +292,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         return Card(
                           child: ListTile(
                             title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                            subtitle: Text('${p.customer.name} · ${formatCurrency(p.standardPrice)}'),
+                            subtitle: Text('${p.customer?.name ?? "(khách hàng đã xoá)"} · ${formatCurrency(p.standardPrice)}'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
