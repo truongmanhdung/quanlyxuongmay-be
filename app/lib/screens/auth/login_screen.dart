@@ -72,11 +72,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: AppColors.brand500,
                       borderRadius: BorderRadius.circular(18),
                     ),
-                    child: const Icon(Iconsax.bag_2, color: Colors.white, size: 32),
+                    child: const Icon(
+                      Iconsax.bag_2,
+                      color: Colors.white,
+                      size: 32,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Quản lý xưởng may BÌNH CANH',
+                    'Quản lý xưởng may BÌNH CANH BÌNH CANH',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
@@ -85,20 +89,36 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    isManager ? 'Đăng nhập dành cho quản lý' : 'Đăng nhập dành cho công nhân',
+                    isManager
+                        ? 'Đăng nhập dành cho quản lý'
+                        : 'Đăng nhập dành cho công nhân',
                     style: TextStyle(color: AppColors.gray500),
                   ),
                   const SizedBox(height: 24),
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF101828) : AppColors.gray100,
+                      color: isDark
+                          ? const Color(0xFF101828)
+                          : AppColors.gray100,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
-                        Expanded(child: _RoleTab(label: 'Quản lý', selected: isManager, onTap: () => setState(() => isManager = true))),
-                        Expanded(child: _RoleTab(label: 'Công nhân', selected: !isManager, onTap: () => setState(() => isManager = false))),
+                        Expanded(
+                          child: _RoleTab(
+                            label: 'Quản lý',
+                            selected: isManager,
+                            onTap: () => setState(() => isManager = true),
+                          ),
+                        ),
+                        Expanded(
+                          child: _RoleTab(
+                            label: 'Công nhân',
+                            selected: !isManager,
+                            onTap: () => setState(() => isManager = false),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -111,12 +131,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: AppColors.error500.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text(error!, style: const TextStyle(color: AppColors.error500)),
+                      child: Text(
+                        error!,
+                        style: const TextStyle(color: AppColors.error500),
+                      ),
                     ),
                   if (isManager) ...[
                     TextField(
                       controller: _usernameCtrl,
-                      decoration: const InputDecoration(labelText: 'Tài khoản', hintText: 'admin'),
+                      decoration: const InputDecoration(
+                        labelText: 'Tài khoản',
+                        hintText: 'admin',
+                      ),
                     ),
                     const SizedBox(height: 14),
                     TextField(
@@ -129,7 +155,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextField(
                       controller: _codeCtrl,
                       textCapitalization: TextCapitalization.characters,
-                      decoration: const InputDecoration(labelText: 'Mã đăng nhập', hintText: 'VD: A012'),
+                      decoration: const InputDecoration(
+                        labelText: 'Mã đăng nhập',
+                        hintText: 'VD: A012',
+                      ),
                       onSubmitted: (_) => _submit(),
                     ),
                   ],
@@ -140,7 +169,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text('Đăng nhập'),
                   ),
@@ -158,7 +190,11 @@ class _RoleTab extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _RoleTab({required this.label, required this.selected, required this.onTap});
+  const _RoleTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

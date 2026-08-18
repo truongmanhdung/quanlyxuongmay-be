@@ -12,7 +12,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Quản Lý Xưởng May",
+  title: "Quản lý xưởng may BÌNH CANH",
   description: "Hệ thống quản lý sản xuất, tính lương và tồn kho xưởng may",
 };
 

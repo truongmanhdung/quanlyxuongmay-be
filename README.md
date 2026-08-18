@@ -1,4 +1,4 @@
-# Quản lý xưởng may mặc
+# Quản lý xưởng may BÌNH CANH mặc
 
 Hệ thống gồm 3 phần, dùng chung một backend API:
 

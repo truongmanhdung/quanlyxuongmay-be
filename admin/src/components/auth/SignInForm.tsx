@@ -40,7 +40,7 @@ export default function SignInForm() {
               Đăng nhập quản lý
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Hệ thống quản lý xưởng may mặc — dành cho quản lý xưởng.
+              Hệ thống Quản lý xưởng may BÌNH CANH mặc — dành cho quản lý xưởng.
             </p>
           </div>
           <div>

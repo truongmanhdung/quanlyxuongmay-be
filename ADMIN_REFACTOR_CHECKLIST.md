@@ -5,9 +5,9 @@ tiếp tục bằng Cursor nếu cần — mỗi mục ghi rõ file đã/sẽ s�
 
 ## Phase 1 — Nền tảng antd + dayjs, đổi thương hiệu ✅
 - [x] Cài `antd` 6.5.2, `dayjs`, `@ant-design/nextjs-registry` (antd 6 hỗ trợ sẵn React 19, không cần patch) — `free-nextjs-admin-dashboard-main/package.json`
-- [x] Bọc `AntdRegistry` + `ConfigProvider` (locale vi_VN, colorPrimary #465fff, đổi theo dark mode qua `useTheme`), thêm `metadata` title "Quản Lý Xưởng May" — `src/app/layout.tsx`, `src/components/providers/AntdThemeProvider.tsx` (mới)
+- [x] Bọc `AntdRegistry` + `ConfigProvider` (locale vi_VN, colorPrimary #465fff, đổi theo dark mode qua `useTheme`), thêm `metadata` title "Quản lý xưởng may BÌNH CANH" — `src/app/layout.tsx`, `src/components/providers/AntdThemeProvider.tsx` (mới)
 - [x] Viết lại `Select.tsx` dùng antd Select, giữ nguyên props cũ (options/placeholder/onChange/className/defaultValue) — `src/components/form/Select.tsx`
-- [x] Thêm chữ "Quản Lý Xưởng May" vào sidebar (giữ icon logo, bỏ ảnh chữ TailAdmin) — `src/layout/AppSidebar.tsx`
+- [x] Thêm chữ "Quản lý xưởng may BÌNH CANH" vào sidebar (giữ icon logo, bỏ ảnh chữ TailAdmin) — `src/layout/AppSidebar.tsx`
 - [x] Đổi `package.json` name → `quanlyxuongmay-admin`; `npm run build` pass
 
 ## Phase 2 — Box thống kê bấm được + chỉ số công nhân đang hoạt động ✅

@@ -1,4 +1,4 @@
-# Nghiệp vụ hệ thống Quản lý Xưởng May
+# Nghiệp vụ hệ thống Quản lý xưởng may BÌNH CANH
 
 Tài liệu này đối chiếu sơ đồ tay bạn vẽ (2 mảng: "Vấn đề sản lượng hàng ngày" và "Sổ lô hàng hoàn thành") với những gì đã cài trong code, để bạn biết cái gì xong, cái gì còn thiếu.
 

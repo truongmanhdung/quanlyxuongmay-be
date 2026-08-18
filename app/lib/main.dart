@@ -37,7 +37,9 @@ class MainApp extends StatelessWidget {
       providers: [
         Provider<ApiClient>(create: (_) => ApiClient()),
         Provider<SocketService>(create: (_) => SocketService()),
-        Provider<PushNotificationService>(create: (_) => PushNotificationService()),
+        Provider<PushNotificationService>(
+          create: (_) => PushNotificationService(),
+        ),
         ChangeNotifierProvider<AuthProvider>(
           create: (context) => AuthProvider(
             context.read<ApiClient>(),
@@ -47,7 +49,7 @@ class MainApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Quản lý xưởng may BÌNH CANH',
+        title: 'Quản lý xưởng may BÌNH CANH BÌNH CANH',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(brightness: Brightness.light),
         darkTheme: buildAppTheme(brightness: Brightness.dark),
@@ -122,13 +124,20 @@ class _StartupLoadingScreenState extends State<_StartupLoadingScreen> {
                 width: 64,
                 height: 64,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: AppColors.brand500, borderRadius: BorderRadius.circular(18)),
+                decoration: BoxDecoration(
+                  color: AppColors.brand500,
+                  borderRadius: BorderRadius.circular(18),
+                ),
                 child: const Icon(Iconsax.bag_2, color: Colors.white, size: 32),
               ),
               const SizedBox(height: 20),
               Text(
-                'Quản lý xưởng may BÌNH CANH',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: isDark ? Colors.white : AppColors.gray900),
+                'Quản lý xưởng may BÌNH CANH BÌNH CANH',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : AppColors.gray900,
+                ),
               ),
               const SizedBox(height: 24),
               const CircularProgressIndicator(),
