@@ -61,8 +61,8 @@ export default function RecentSubmissions({ reports }: { reports: ProductionRepo
             {reports.map((r) => (
               <TableRow key={r._id}>
                 <TableCell className="py-3">
-                  <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{r.worker.name}</p>
-                  <span className="text-gray-500 text-theme-xs dark:text-gray-400">{r.worker.code}</span>
+                  <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{r.worker?.name ?? "(công nhân đã xoá)"}</p>
+                  <span className="text-gray-500 text-theme-xs dark:text-gray-400">{r.worker?.code}</span>
                 </TableCell>
                 <TableCell className="py-3 text-gray-600 text-theme-sm dark:text-gray-300">
                   {r.product?.name ?? "(mẫu hàng đã xoá)"} — {r.processStage?.name ?? "(công đoạn đã xoá)"}

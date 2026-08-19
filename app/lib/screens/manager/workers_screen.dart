@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../core/api_client.dart';
@@ -48,11 +49,10 @@ class _WorkersScreenState extends State<WorkersScreen> {
   }
 
   Future<void> _showFormSheet({Worker? editing}) async {
-    final codeCtrl = TextEditingController(text: editing?.code ?? '');
     final nameCtrl = TextEditingController(text: editing?.name ?? '');
     final phoneCtrl = TextEditingController(text: editing?.phone ?? '');
-    String? codeError;
     String? nameError;
+    String? createdCode;
 
     final saved = await showAppFormSheet<bool>(
       context: context,
@@ -60,18 +60,17 @@ class _WorkersScreenState extends State<WorkersScreen> {
         builder: (ctx, setSheetState) {
           Future<void> submit() async {
             setSheetState(() {
-              codeError = editing == null && codeCtrl.text.trim().isEmpty ? 'Nhập mã đăng nhập' : null;
               nameError = nameCtrl.text.trim().isEmpty ? 'Nhập họ tên' : null;
             });
-            if (codeError != null || nameError != null) return;
+            if (nameError != null) return;
             final api = ctx.read<ApiClient>();
             try {
               if (editing == null) {
-                await WorkerService(api).create(
-                  code: codeCtrl.text.trim(),
+                final created = await WorkerService(api).create(
                   name: nameCtrl.text.trim(),
                   phone: phoneCtrl.text.trim(),
                 );
+                createdCode = created.code;
               } else {
                 await WorkerService(api).update(
                   editing.id,
@@ -94,13 +93,14 @@ class _WorkersScreenState extends State<WorkersScreen> {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextField(
-                  controller: codeCtrl,
-                  enabled: editing == null,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(labelText: 'Mã đăng nhập (VD: A012)', errorText: codeError),
-                ),
-                const SizedBox(height: 14),
+                if (editing != null) ...[
+                  TextField(
+                    controller: TextEditingController(text: editing.code),
+                    enabled: false,
+                    decoration: const InputDecoration(labelText: 'Mã đăng nhập'),
+                  ),
+                  const SizedBox(height: 14),
+                ],
                 TextField(
                   controller: nameCtrl,
                   decoration: InputDecoration(labelText: 'Họ tên', errorText: nameError),
@@ -118,32 +118,78 @@ class _WorkersScreenState extends State<WorkersScreen> {
       ),
     );
     if (saved == true) _load();
+    if (createdCode != null && mounted) await _showNewCodeDialog(createdCode!);
   }
 
-  Future<void> _delete(Worker w) async {
-    final api = context.read<ApiClient>();
-    final confirmed = await showAppFormSheet<bool>(
+  Future<void> _showNewCodeDialog(String code) async {
+    await showAppFormSheet<void>(
       context: context,
       builder: (ctx) => AppFormSheetScaffold(
-        title: 'Xoá công nhân',
-        content: Text('Xoá công nhân "${w.name}" (${w.code})?'),
+        title: 'Đã tạo công nhân',
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Báo mã đăng nhập này cho công nhân để họ đăng nhập vào app (không cần mật khẩu):'),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: AppColors.gray100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  code,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2, color: AppColors.brand600),
+                ),
+              ),
+            ),
+          ],
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error500),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xoá'),
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: code));
+              ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Đã sao chép mã')));
+            },
+            child: const Text('Sao chép'),
           ),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx), child: const Text('Đã ghi nhớ')),
         ],
       ),
     );
-    if (confirmed != true) return;
+  }
+
+  Future<void> _toggleActive(Worker w) async {
+    final api = context.read<ApiClient>();
+    if (w.active) {
+      final confirmed = await showAppFormSheet<bool>(
+        context: context,
+        builder: (ctx) => AppFormSheetScaffold(
+          title: 'Vô hiệu hoá công nhân',
+          content: Text('Vô hiệu hoá công nhân "${w.name}" (${w.code})?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error500),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Vô hiệu hoá'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
     try {
-      await WorkerService(api).remove(w.id);
+      if (w.active) {
+        await WorkerService(api).remove(w.id);
+      } else {
+        await WorkerService(api).update(w.id, active: true);
+      }
       _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xoá công nhân thất bại')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật trạng thái thất bại')));
       }
     }
   }
@@ -189,9 +235,9 @@ class _WorkersScreenState extends State<WorkersScreen> {
                                   onPressed: () => _showFormSheet(editing: w),
                                 ),
                                 RowIconButton(
-                                  icon: Icons.delete_outline,
-                                  color: AppColors.error500,
-                                  onPressed: () => _delete(w),
+                                  icon: w.active ? Icons.block_outlined : Icons.check_circle_outline,
+                                  color: w.active ? AppColors.error500 : AppColors.success500,
+                                  onPressed: () => _toggleActive(w),
                                 ),
                               ],
                             ),

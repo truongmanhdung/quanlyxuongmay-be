@@ -57,7 +57,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
     try {
       final results = await Future.wait([
         BatchService(api).list(status: statusFilter.isEmpty ? null : statusFilter),
-        customers.isEmpty ? CustomerService(api).list() : Future.value(customers),
+        customers.isEmpty ? CustomerService(api).list(active: true) : Future.value(customers),
       ]);
       setState(() {
         batches = results[0] as List<Batch>;
@@ -82,7 +82,6 @@ class _BatchesScreenState extends State<BatchesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cần có khách hàng trước khi tạo lô hàng')));
       return;
     }
-    final codeCtrl = TextEditingController();
     final qtyCtrl = TextEditingController();
     Customer selectedCustomer = customers.first;
     Product? selectedProduct;
@@ -94,7 +93,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
         builder: (ctx, setSheetState) {
           Future<void> loadProducts(Customer c) async {
             final api = ctx.read<ApiClient>();
-            final data = await ProductService(api).list(customer: c.id);
+            final data = await ProductService(api).list(customer: c.id, active: true);
             setSheetState(() {
               products = data;
               selectedProduct = data.isNotEmpty ? data.first : null;
@@ -110,12 +109,6 @@ class _BatchesScreenState extends State<BatchesScreen> {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextField(
-                  controller: codeCtrl,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: const InputDecoration(labelText: 'Mã lô (VD: LO001)'),
-                ),
-                const SizedBox(height: 14),
                 DropdownButtonFormField<Customer>(
                   initialValue: selectedCustomer,
                   decoration: const InputDecoration(labelText: 'Khách hàng'),
@@ -146,11 +139,10 @@ class _BatchesScreenState extends State<BatchesScreen> {
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
               ElevatedButton(
                 onPressed: () async {
-                  if (codeCtrl.text.trim().isEmpty || selectedProduct == null) return;
+                  if (selectedProduct == null) return;
                   final api = ctx.read<ApiClient>();
                   try {
                     await BatchService(api).create(
-                      code: codeCtrl.text.trim(),
                       product: selectedProduct!.id,
                       customer: selectedCustomer.id,
                       plannedQuantity: qtyCtrl.text.trim().isEmpty ? null : double.tryParse(qtyCtrl.text),

@@ -39,6 +39,7 @@ class Order {
   final CustomerRef? customer;
   final DateTime date;
   final String? note;
+  final bool active;
   final List<OrderDetail> details;
 
   Order({
@@ -48,6 +49,7 @@ class Order {
     required this.customer,
     required this.date,
     this.note,
+    required this.active,
     this.details = const [],
   });
 
@@ -58,6 +60,7 @@ class Order {
         customer: json['customer'] != null ? CustomerRef.fromJson(json['customer'] as Map<String, dynamic>) : null,
         date: DateTime.parse(json['date'] as String),
         note: json['note'] as String?,
+        active: json['active'] as bool? ?? true,
         details: (json['details'] as List<dynamic>? ?? [])
             .map((e) => OrderDetail.fromJson(e as Map<String, dynamic>))
             .toList(),

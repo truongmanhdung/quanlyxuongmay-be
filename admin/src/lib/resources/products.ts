@@ -2,10 +2,11 @@ import { api } from "@/lib/api";
 import { Product, ProcessStage } from "@/lib/types";
 
 export const productsApi = {
-  list: (params?: { customer?: string; search?: string }) => {
+  list: (params?: { customer?: string; search?: string; active?: boolean }) => {
     const qs = new URLSearchParams();
     if (params?.customer) qs.set("customer", params.customer);
     if (params?.search) qs.set("search", params.search);
+    if (params?.active !== undefined) qs.set("active", String(params.active));
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
     return api.get<Product[]>(`/products${suffix}`);
   },

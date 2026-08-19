@@ -13,6 +13,7 @@ const defectReportSchema = new mongoose.Schema(
     type: { type: String, enum: ["hong", "tra_lai"], required: true }, // hang hong | khach tra lai
     reason: { type: String, trim: true },
     reportedAt: { type: Date, default: Date.now },
+    active: { type: Boolean, default: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }

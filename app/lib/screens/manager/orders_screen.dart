@@ -45,7 +45,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     try {
       final results = await Future.wait([
         OrderService(api).list(type: typeFilter.isEmpty ? null : typeFilter),
-        customers.isEmpty ? CustomerService(api).list() : Future.value(customers),
+        customers.isEmpty ? CustomerService(api).list(active: true) : Future.value(customers),
       ]);
       setState(() {
         orders = results[0] as List<Order>;
@@ -65,7 +65,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cần có khách hàng trước khi tạo phiếu')));
       return;
     }
-    final codeCtrl = TextEditingController();
     final qtyCtrl = TextEditingController();
     String type = 'nhap';
     Customer selectedCustomer = customers.first;
@@ -81,7 +80,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         builder: (ctx, setSheetState) {
           Future<void> loadProducts(Customer c) async {
             final api = ctx.read<ApiClient>();
-            final data = await ProductService(api).list(customer: c.id);
+            final data = await ProductService(api).list(customer: c.id, active: true);
             setSheetState(() {
               products = data;
               selectedProduct = data.isNotEmpty ? data.first : null;
@@ -90,7 +89,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
           Future<void> loadBatches(Customer c, Product p) async {
             final api = ctx.read<ApiClient>();
-            final data = await BatchService(api).list(customer: c.id, product: p.id);
+            final data = await BatchService(api).list(customer: c.id, product: p.id, active: true);
             setSheetState(() {
               batches = data;
               selectedBatch = null;
@@ -125,8 +124,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: 'Mã phiếu')),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<Customer>(
                   initialValue: selectedCustomer,
@@ -171,11 +168,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
               ElevatedButton(
                 onPressed: () async {
-                  if (codeCtrl.text.trim().isEmpty) return;
                   final api = ctx.read<ApiClient>();
                   try {
                     await OrderService(api).create(
-                      code: codeCtrl.text.trim(),
                       type: type,
                       customer: selectedCustomer.id,
                       date: DateTime.now(),

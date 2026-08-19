@@ -64,9 +64,9 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const product = await Product.findByIdAndDelete(req.params.id);
+  const product = await Product.findByIdAndUpdate(req.params.id, { active: false });
   if (!product) return res.status(404).json({ message: "Không tìm thấy mẫu hàng" });
-  await ProcessStage.deleteMany({ product: product._id });
+  await ProcessStage.updateMany({ product: product._id }, { active: false });
   res.status(204).send();
 });
 
@@ -108,7 +108,7 @@ const updateStage = asyncHandler(async (req, res) => {
 });
 
 const removeStage = asyncHandler(async (req, res) => {
-  const stage = await ProcessStage.findByIdAndDelete(req.params.stageId);
+  const stage = await ProcessStage.findByIdAndUpdate(req.params.stageId, { active: false });
   if (!stage) return res.status(404).json({ message: "Không tìm thấy công đoạn" });
   res.status(204).send();
 });

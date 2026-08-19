@@ -7,7 +7,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
-import { PencilIcon, TrashBinIcon, PlusIcon, ListIcon } from "@/icons";
+import { PencilIcon, TrashBinIcon, PlusIcon, ListIcon, CheckCircleIcon } from "@/icons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { productsApi } from "@/lib/resources/products";
 import { customersApi } from "@/lib/resources/customers";
@@ -174,14 +174,25 @@ export default function ProductsPage() {
     }
   }
 
-  async function handleDelete(p: Product) {
-    const ok = await confirmDialog({ message: `Xoá mẫu hàng "${p.name}"?`, danger: true });
-    if (!ok) return;
+  async function handleToggleActive(p: Product) {
+    if (p.active) {
+      const ok = await confirmDialog({
+        title: "Xác nhận vô hiệu hoá",
+        message: `Vô hiệu hoá mẫu hàng "${p.name}"?`,
+        confirmText: "Vô hiệu hoá",
+        danger: true,
+      });
+      if (!ok) return;
+    }
     try {
-      await productsApi.remove(p._id);
+      if (p.active) {
+        await productsApi.remove(p._id);
+      } else {
+        await productsApi.update(p._id, { active: true });
+      }
       await load();
     } catch (err) {
-      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
+      notification.error({ message: err instanceof ApiError ? err.message : "Cập nhật trạng thái thất bại" });
     }
   }
 
@@ -292,8 +303,16 @@ export default function ProductsPage() {
                     <button onClick={() => openEdit(p)} title="Sửa" className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
                       <PencilIcon />
                     </button>
-                    <button onClick={() => handleDelete(p)} title="Xoá" className="text-gray-500 hover:text-error-500 dark:text-gray-400">
-                      <TrashBinIcon />
+                    <button
+                      onClick={() => handleToggleActive(p)}
+                      title={p.active ? "Vô hiệu hoá" : "Kích hoạt lại"}
+                      className={
+                        p.active
+                          ? "text-gray-500 hover:text-error-500 dark:text-gray-400"
+                          : "text-gray-500 hover:text-success-500 dark:text-gray-400"
+                      }
+                    >
+                      {p.active ? <TrashBinIcon /> : <CheckCircleIcon />}
                     </button>
                   </div>
                 ),
@@ -491,14 +510,25 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
     }
   }
 
-  async function handleRemove(stage: ProcessStage) {
-    const ok = await confirmDialog({ message: `Xoá công đoạn "${stage.name}"?`, danger: true });
-    if (!ok) return;
+  async function handleToggleActive(stage: ProcessStage) {
+    if (stage.active) {
+      const ok = await confirmDialog({
+        title: "Xác nhận vô hiệu hoá",
+        message: `Vô hiệu hoá công đoạn "${stage.name}"?`,
+        confirmText: "Vô hiệu hoá",
+        danger: true,
+      });
+      if (!ok) return;
+    }
     try {
-      await productsApi.removeStage(product._id, stage._id);
+      if (stage.active) {
+        await productsApi.removeStage(product._id, stage._id);
+      } else {
+        await productsApi.updateStage(product._id, stage._id, { active: true });
+      }
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Xoá thất bại");
+      setError(err instanceof ApiError ? err.message : "Cập nhật trạng thái thất bại");
     }
   }
 
@@ -552,6 +582,7 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
               <div key={s._id} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 dark:border-gray-800">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{s.name}</span>
                 <div className="flex items-center gap-3">
+                  <Badge size="sm" color={s.active ? "success" : "light"}>{s.active ? "Hoạt động" : "Ngừng"}</Badge>
                   <span className="text-sm text-gray-600 dark:text-gray-300">{formatCurrency(s.unitPrice)}</span>
                   <button
                     onClick={() => {
@@ -565,8 +596,16 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
                   >
                     <PencilIcon />
                   </button>
-                  <button onClick={() => handleRemove(s)} title="Xoá" className="text-gray-500 hover:text-error-500 dark:text-gray-400">
-                    <TrashBinIcon />
+                  <button
+                    onClick={() => handleToggleActive(s)}
+                    title={s.active ? "Vô hiệu hoá" : "Kích hoạt lại"}
+                    className={
+                      s.active
+                        ? "text-gray-500 hover:text-error-500 dark:text-gray-400"
+                        : "text-gray-500 hover:text-success-500 dark:text-gray-400"
+                    }
+                  >
+                    {s.active ? <TrashBinIcon /> : <CheckCircleIcon />}
                   </button>
                 </div>
               </div>

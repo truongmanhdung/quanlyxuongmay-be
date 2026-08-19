@@ -57,7 +57,7 @@ class _DefectsScreenState extends State<DefectsScreen> {
     try {
       final results = await Future.wait([
         DefectService(api).list(type: typeFilter.isEmpty ? null : typeFilter),
-        customers.isEmpty ? CustomerService(api).list() : Future.value(customers),
+        customers.isEmpty ? CustomerService(api).list(active: true) : Future.value(customers),
       ]);
       setState(() {
         defects = results[0] as List<DefectReport>;
@@ -95,7 +95,7 @@ class _DefectsScreenState extends State<DefectsScreen> {
         builder: (ctx, setSheetState) {
           Future<void> loadProducts(Customer c) async {
             final api = ctx.read<ApiClient>();
-            final data = await ProductService(api).list(customer: c.id);
+            final data = await ProductService(api).list(customer: c.id, active: true);
             setSheetState(() {
               products = data;
               selectedProduct = data.isNotEmpty ? data.first : null;

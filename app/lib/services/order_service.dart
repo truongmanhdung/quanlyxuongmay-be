@@ -11,7 +11,6 @@ class OrderService {
   }
 
   Future<Order> create({
-    required String code,
     required String type,
     required String customer,
     DateTime? date,
@@ -19,7 +18,6 @@ class OrderService {
     List<Map<String, dynamic>>? details,
   }) async {
     final res = await api.post('/orders', body: {
-      'code': code,
       'type': type,
       'customer': customer,
       if (date != null) 'date': date.toIso8601String(),

@@ -48,10 +48,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 
   Future<void> _showFormSheet({Customer? editing}) async {
-    final codeCtrl = TextEditingController(text: editing?.code ?? '');
     final nameCtrl = TextEditingController(text: editing?.name ?? '');
     final phoneCtrl = TextEditingController(text: editing?.phone ?? '');
-    String? codeError;
     String? nameError;
 
     final saved = await showAppFormSheet<bool>(
@@ -60,15 +58,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
         builder: (ctx, setSheetState) {
           Future<void> submit() async {
             setSheetState(() {
-              codeError = editing == null && codeCtrl.text.trim().isEmpty ? 'Nhập mã khách hàng' : null;
               nameError = nameCtrl.text.trim().isEmpty ? 'Nhập tên khách hàng' : null;
             });
-            if (codeError != null || nameError != null) return;
+            if (nameError != null) return;
             final api = ctx.read<ApiClient>();
             try {
               if (editing == null) {
                 await CustomerService(api).create(
-                  code: codeCtrl.text.trim(),
                   name: nameCtrl.text.trim(),
                   phone: phoneCtrl.text.trim(),
                 );
@@ -94,13 +90,14 @@ class _CustomersScreenState extends State<CustomersScreen> {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextField(
-                  controller: codeCtrl,
-                  enabled: editing == null,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(labelText: 'Mã khách hàng', errorText: codeError),
-                ),
-                const SizedBox(height: 14),
+                if (editing != null) ...[
+                  TextField(
+                    controller: TextEditingController(text: editing.code),
+                    enabled: false,
+                    decoration: const InputDecoration(labelText: 'Mã khách hàng'),
+                  ),
+                  const SizedBox(height: 14),
+                ],
                 TextField(
                   controller: nameCtrl,
                   decoration: InputDecoration(labelText: 'Tên khách hàng', errorText: nameError),
@@ -120,30 +117,36 @@ class _CustomersScreenState extends State<CustomersScreen> {
     if (saved == true) _load();
   }
 
-  Future<void> _delete(Customer c) async {
+  Future<void> _toggleActive(Customer c) async {
     final api = context.read<ApiClient>();
-    final confirmed = await showAppFormSheet<bool>(
-      context: context,
-      builder: (ctx) => AppFormSheetScaffold(
-        title: 'Xoá khách hàng',
-        content: Text('Xoá khách hàng "${c.name}"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error500),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xoá'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
+    if (c.active) {
+      final confirmed = await showAppFormSheet<bool>(
+        context: context,
+        builder: (ctx) => AppFormSheetScaffold(
+          title: 'Vô hiệu hoá khách hàng',
+          content: Text('Vô hiệu hoá khách hàng "${c.name}"?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error500),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Vô hiệu hoá'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
     try {
-      await CustomerService(api).remove(c.id);
+      if (c.active) {
+        await CustomerService(api).remove(c.id);
+      } else {
+        await CustomerService(api).update(c.id, active: true);
+      }
       _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xoá khách hàng thất bại')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật trạng thái thất bại')));
       }
     }
   }
@@ -185,9 +188,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
                                   onPressed: () => _showFormSheet(editing: c),
                                 ),
                                 RowIconButton(
-                                  icon: Icons.delete_outline,
-                                  color: AppColors.error500,
-                                  onPressed: () => _delete(c),
+                                  icon: c.active ? Icons.block_outlined : Icons.check_circle_outline,
+                                  color: c.active ? AppColors.error500 : AppColors.success500,
+                                  onPressed: () => _toggleActive(c),
                                 ),
                               ],
                             ),

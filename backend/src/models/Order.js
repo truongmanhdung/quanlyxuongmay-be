@@ -8,6 +8,7 @@ const orderSchema = new mongoose.Schema(
     customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
     date: { type: Date, default: Date.now },
     note: { type: String, trim: true },
+    active: { type: Boolean, default: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }

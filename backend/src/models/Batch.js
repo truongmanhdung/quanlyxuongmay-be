@@ -13,6 +13,7 @@ const batchSchema = new mongoose.Schema(
       default: "dang_lam",
     },
     note: { type: String, trim: true },
+    active: { type: Boolean, default: true },
     completedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     completedAt: { type: Date },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

@@ -9,7 +9,7 @@ import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
 import DateRangeFilter from "@/components/common/DateRangeFilter";
-import { PlusIcon, TrashBinIcon } from "@/icons";
+import { PlusIcon, TrashBinIcon, CheckCircleIcon } from "@/icons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { defectsApi } from "@/lib/resources/defects";
 import { productsApi } from "@/lib/resources/products";
@@ -113,18 +113,24 @@ export default function DefectsPage() {
       setStageOptions([]);
       return;
     }
-    productsApi.listStages(form.product).then(setStageOptions).catch(() => setStageOptions([]));
+    productsApi
+      .listStages(form.product)
+      .then((stages) => setStageOptions(stages.filter((s) => s.active)))
+      .catch(() => setStageOptions([]));
   }, [form.product]);
 
   // Công đoạn => tải công nhân từng làm công đoạn này của mẫu hàng, fallback toàn bộ danh sách
   useEffect(() => {
     if (!form.product || !form.processStage) {
-      workersApi.list().then(setWorkerOptions).catch(() => setWorkerOptions([]));
+      workersApi.list({ active: true }).then(setWorkerOptions).catch(() => setWorkerOptions([]));
       return;
     }
     defectsApi
       .workersForStage(form.product, form.processStage)
-      .then((ws) => (ws.length > 0 ? setWorkerOptions(ws) : workersApi.list().then(setWorkerOptions)))
+      .then((ws) => {
+        const active = ws.filter((w) => w.active);
+        return active.length > 0 ? setWorkerOptions(active) : workersApi.list({ active: true }).then(setWorkerOptions);
+      })
       .catch(() => setWorkerOptions([]));
   }, [form.product, form.processStage]);
 
@@ -161,14 +167,25 @@ export default function DefectsPage() {
     }
   }
 
-  async function handleDelete(d: DefectReport) {
-    const ok = await confirmDialog({ message: "Xoá bản ghi này?", danger: true });
-    if (!ok) return;
+  async function handleToggleActive(d: DefectReport) {
+    if (d.active) {
+      const ok = await confirmDialog({
+        title: "Xác nhận vô hiệu hoá",
+        message: "Vô hiệu hoá bản ghi này?",
+        confirmText: "Vô hiệu hoá",
+        danger: true,
+      });
+      if (!ok) return;
+    }
     try {
-      await defectsApi.remove(d._id);
+      if (d.active) {
+        await defectsApi.remove(d._id);
+      } else {
+        await defectsApi.update(d._id, { active: true });
+      }
       await load();
     } catch (err) {
-      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
+      notification.error({ message: err instanceof ApiError ? err.message : "Cập nhật trạng thái thất bại" });
     }
   }
 
@@ -232,18 +249,19 @@ export default function DefectsPage() {
                           <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Số lượng</TableCell>
                           <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Lý do</TableCell>
                           <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Ngày</TableCell>
+                          <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Trạng thái</TableCell>
                           <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">{""}</TableCell>
                         </TableRow>
                       </TableHeader>
                       <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                         {loading && (
                           <TableRow>
-                            <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={8}>Đang tải...</TableCell>
+                            <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={9}>Đang tải...</TableCell>
                           </TableRow>
                         )}
                         {!loading && defects.length === 0 && (
                           <TableRow>
-                            <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={8}>Chưa có bản ghi nào</TableCell>
+                            <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={9}>Chưa có bản ghi nào</TableCell>
                           </TableRow>
                         )}
                         {defects.map((d) => (
@@ -268,8 +286,19 @@ export default function DefectsPage() {
                             <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{d.reason || "—"}</TableCell>
                             <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{formatDateTime(d.reportedAt)}</TableCell>
                             <TableCell className="py-3 px-5">
-                              <button onClick={() => handleDelete(d)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
-                                <TrashBinIcon />
+                              <Badge size="sm" color={d.active ? "success" : "light"}>{d.active ? "Hoạt động" : "Ngừng"}</Badge>
+                            </TableCell>
+                            <TableCell className="py-3 px-5">
+                              <button
+                                onClick={() => handleToggleActive(d)}
+                                title={d.active ? "Vô hiệu hoá" : "Kích hoạt lại"}
+                                className={
+                                  d.active
+                                    ? "text-gray-500 hover:text-error-500 dark:text-gray-400"
+                                    : "text-gray-500 hover:text-success-500 dark:text-gray-400"
+                                }
+                              >
+                                {d.active ? <TrashBinIcon /> : <CheckCircleIcon />}
                               </button>
                             </TableCell>
                           </TableRow>
@@ -315,7 +344,7 @@ export default function DefectsPage() {
               <Select
                 placeholder="Chọn mẫu hàng"
                 value={form.product}
-                options={products.map((p) => ({ value: p._id, label: p.name }))}
+                options={products.filter((p) => p.active).map((p) => ({ value: p._id, label: p.name }))}
                 onChange={(value) => setForm({ ...form, product: value, processStage: "", worker: "" })}
               />
             </div>
@@ -324,7 +353,7 @@ export default function DefectsPage() {
               <Select
                 placeholder="Chọn khách hàng"
                 value={form.customer}
-                options={customers.map((c) => ({ value: c._id, label: `${c.code} — ${c.name}` }))}
+                options={customers.filter((c) => c.active).map((c) => ({ value: c._id, label: `${c.code} — ${c.name}` }))}
                 onChange={(value) => setForm({ ...form, customer: value })}
               />
             </div>

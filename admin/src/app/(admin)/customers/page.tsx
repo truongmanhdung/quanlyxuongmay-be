@@ -7,14 +7,14 @@ import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Badge from "@/components/ui/badge/Badge";
-import { PencilIcon, TrashBinIcon, PlusIcon } from "@/icons";
+import { PencilIcon, TrashBinIcon, PlusIcon, CheckCircleIcon } from "@/icons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { customersApi } from "@/lib/resources/customers";
 import { Customer } from "@/lib/types";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 
-const emptyForm = { code: "", name: "", phone: "", note: "" };
+const emptyForm = { name: "", phone: "", note: "" };
 
 export default function CustomersPage() {
   const confirmDialog = useConfirmDialog();
@@ -54,7 +54,7 @@ export default function CustomersPage() {
 
   function openEdit(c: Customer) {
     setEditing(c);
-    setForm({ code: c.code, name: c.name, phone: c.phone || "", note: c.note || "" });
+    setForm({ name: c.name, phone: c.phone || "", note: c.note || "" });
     setError(null);
     setIsOpen(true);
   }
@@ -78,14 +78,25 @@ export default function CustomersPage() {
     }
   }
 
-  async function handleDelete(c: Customer) {
-    const ok = await confirmDialog({ message: `Xoá khách hàng "${c.name}"?`, danger: true });
-    if (!ok) return;
+  async function handleToggleActive(c: Customer) {
+    if (c.active) {
+      const ok = await confirmDialog({
+        title: "Xác nhận vô hiệu hoá",
+        message: `Vô hiệu hoá khách hàng "${c.name}"?`,
+        confirmText: "Vô hiệu hoá",
+        danger: true,
+      });
+      if (!ok) return;
+    }
     try {
-      await customersApi.remove(c._id);
+      if (c.active) {
+        await customersApi.remove(c._id);
+      } else {
+        await customersApi.update(c._id, { active: true });
+      }
       await load();
     } catch (err) {
-      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
+      notification.error({ message: err instanceof ApiError ? err.message : "Cập nhật trạng thái thất bại" });
     }
   }
 
@@ -144,8 +155,16 @@ export default function CustomersPage() {
                       <button onClick={() => openEdit(c)} title="Sửa" className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
                         <PencilIcon />
                       </button>
-                      <button onClick={() => handleDelete(c)} title="Xoá" className="text-gray-500 hover:text-error-500 dark:text-gray-400">
-                        <TrashBinIcon />
+                      <button
+                        onClick={() => handleToggleActive(c)}
+                        title={c.active ? "Vô hiệu hoá" : "Kích hoạt lại"}
+                        className={
+                          c.active
+                            ? "text-gray-500 hover:text-error-500 dark:text-gray-400"
+                            : "text-gray-500 hover:text-success-500 dark:text-gray-400"
+                        }
+                      >
+                        {c.active ? <TrashBinIcon /> : <CheckCircleIcon />}
                       </button>
                     </div>
                   </TableCell>
@@ -167,15 +186,12 @@ export default function CustomersPage() {
                 {error}
               </div>
             )}
-            <div>
-              <Label>Mã khách hàng {!editing && <span className="text-error-500">*</span>}</Label>
-              <Input
-                placeholder="KH001"
-                value={form.code}
-                disabled={!!editing}
-                onChange={(e) => setForm({ ...form, code: e.target.value })}
-              />
-            </div>
+            {editing && (
+              <div>
+                <Label>Mã khách hàng</Label>
+                <Input value={editing.code} disabled />
+              </div>
+            )}
             <div>
               <Label>Tên khách hàng <span className="text-error-500">*</span></Label>
               <Input placeholder="Công ty ABC" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />

@@ -8,7 +8,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
-import { PlusIcon, TrashBinIcon, EyeIcon } from "@/icons";
+import { PlusIcon, TrashBinIcon, EyeIcon, CheckCircleIcon } from "@/icons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { ordersApi } from "@/lib/resources/orders";
 import { customersApi } from "@/lib/resources/customers";
@@ -56,14 +56,25 @@ export default function OrdersPage() {
     setViewing(full);
   }
 
-  async function handleDelete(o: Order) {
-    const ok = await confirmDialog({ message: `Xoá phiếu ${o.code}?`, danger: true });
-    if (!ok) return;
+  async function handleToggleActive(o: Order) {
+    if (o.active) {
+      const ok = await confirmDialog({
+        title: "Xác nhận vô hiệu hoá",
+        message: `Vô hiệu hoá phiếu ${o.code}?`,
+        confirmText: "Vô hiệu hoá",
+        danger: true,
+      });
+      if (!ok) return;
+    }
     try {
-      await ordersApi.remove(o._id);
+      if (o.active) {
+        await ordersApi.remove(o._id);
+      } else {
+        await ordersApi.update(o._id, { active: true });
+      }
       await load();
     } catch (err) {
-      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
+      notification.error({ message: err instanceof ApiError ? err.message : "Cập nhật trạng thái thất bại" });
     }
   }
 
@@ -120,18 +131,19 @@ export default function OrdersPage() {
                           <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Loại</TableCell>
                           <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Khách hàng</TableCell>
                           <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Ngày</TableCell>
+                          <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Trạng thái</TableCell>
                           <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">{""}</TableCell>
                         </TableRow>
                       </TableHeader>
                       <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                         {loading && (
                           <TableRow>
-                            <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={5}>Đang tải...</TableCell>
+                            <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={6}>Đang tải...</TableCell>
                           </TableRow>
                         )}
                         {!loading && orders.length === 0 && (
                           <TableRow>
-                            <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={5}>Chưa có phiếu nào</TableCell>
+                            <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={6}>Chưa có phiếu nào</TableCell>
                           </TableRow>
                         )}
                         {orders.map((o) => (
@@ -145,12 +157,23 @@ export default function OrdersPage() {
                             <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{o.customer?.name}</TableCell>
                             <TableCell className="py-3 px-5 text-gray-500 text-theme-xs dark:text-gray-400">{formatDate(o.date)}</TableCell>
                             <TableCell className="py-3 px-5">
+                              <Badge size="sm" color={o.active ? "success" : "light"}>{o.active ? "Hoạt động" : "Ngừng"}</Badge>
+                            </TableCell>
+                            <TableCell className="py-3 px-5">
                               <div className="flex items-center gap-3">
                                 <button onClick={() => openView(o)} className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
                                   <EyeIcon />
                                 </button>
-                                <button onClick={() => handleDelete(o)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
-                                  <TrashBinIcon />
+                                <button
+                                  onClick={() => handleToggleActive(o)}
+                                  title={o.active ? "Vô hiệu hoá" : "Kích hoạt lại"}
+                                  className={
+                                    o.active
+                                      ? "text-gray-500 hover:text-error-500 dark:text-gray-400"
+                                      : "text-gray-500 hover:text-success-500 dark:text-gray-400"
+                                  }
+                                >
+                                  {o.active ? <TrashBinIcon /> : <CheckCircleIcon />}
                                 </button>
                               </div>
                             </TableCell>
@@ -173,7 +196,7 @@ export default function OrdersPage() {
 
       {isOpen && (
         <CreateOrderModal
-          customers={customers}
+          customers={customers.filter((c) => c.active)}
           onClose={() => setIsOpen(false)}
           onCreated={() => {
             setIsOpen(false);
@@ -260,7 +283,6 @@ function CreateOrderModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [code, setCode] = useState("");
   const [type, setType] = useState<"nhap" | "xuat">("nhap");
   const [customer, setCustomer] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -277,7 +299,7 @@ function CreateOrderModal({
       setProducts([]);
       return;
     }
-    productsApi.list({ customer }).then(setProducts).catch(() => setProducts([]));
+    productsApi.list({ customer, active: true }).then(setProducts).catch(() => setProducts([]));
   }, [customer]);
 
   // Khi xuat hang: tai ton kho kha dung cho tung ma hang dang co trong danh sach dong de canh bao
@@ -298,7 +320,7 @@ function CreateOrderModal({
   function loadBatchesFor(productId: string) {
     if (!productId || !customer || productId in batchesByProduct) return;
     batchesApi
-      .list({ customer, product: productId })
+      .list({ customer, product: productId, active: true })
       .then((data) => setBatchesByProduct((prev) => ({ ...prev, [productId]: data })))
       .catch(() => setBatchesByProduct((prev) => ({ ...prev, [productId]: [] })));
   }
@@ -323,8 +345,8 @@ function CreateOrderModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!code || !customer) {
-      setError("Vui lòng nhập mã phiếu và chọn khách hàng");
+    if (!customer) {
+      setError("Vui lòng chọn khách hàng");
       return;
     }
     if (type === "xuat") {
@@ -345,7 +367,6 @@ function CreateOrderModal({
     setError(null);
     try {
       await ordersApi.create({
-        code,
         type,
         customer,
         date,
@@ -377,10 +398,6 @@ function CreateOrderModal({
           )}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Mã phiếu <span className="text-error-500">*</span></Label>
-              <Input placeholder="PN001" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
-            </div>
-            <div>
               <Label>Loại phiếu</Label>
               <div className="flex rounded-lg border border-gray-300 dark:border-gray-700 overflow-hidden h-11">
                 <button
@@ -399,8 +416,6 @@ function CreateOrderModal({
                 </button>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Khách hàng <span className="text-error-500">*</span></Label>
               <Select
@@ -409,14 +424,16 @@ function CreateOrderModal({
                 onChange={setCustomer}
               />
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Ngày</Label>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
-          </div>
-          <div>
-            <Label>Ghi chú</Label>
-            <Input placeholder="Ghi chú..." value={note} onChange={(e) => setNote(e.target.value)} />
+            <div>
+              <Label>Ghi chú</Label>
+              <Input placeholder="Ghi chú..." value={note} onChange={(e) => setNote(e.target.value)} />
+            </div>
           </div>
 
           <div className="border-t border-gray-200 dark:border-gray-800 pt-4">

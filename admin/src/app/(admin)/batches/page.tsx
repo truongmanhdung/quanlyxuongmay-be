@@ -31,7 +31,7 @@ const STATUS_COLOR: Record<Batch["status"], "warning" | "light" | "success"> = {
   hoan_thanh: "success",
 };
 
-const emptyForm = { code: "", product: "", customer: "", plannedQuantity: "", note: "" };
+const emptyForm = { product: "", customer: "", plannedQuantity: "", note: "" };
 
 export default function BatchesPage() {
   const confirmDialog = useConfirmDialog();
@@ -55,8 +55,8 @@ export default function BatchesPage() {
     try {
       const [b, p, c] = await Promise.all([
         batchesApi.list({ status: statusFilter || undefined, search: search || undefined }),
-        productsApi.list(),
-        customersApi.list(),
+        productsApi.list({ active: true }),
+        customersApi.list({ active: true }),
       ]);
       setBatches(b);
       setProducts(p);
@@ -108,7 +108,6 @@ export default function BatchesPage() {
   function openEdit(b: Batch) {
     setEditing(b);
     setForm({
-      code: b.code,
       product: b.product?._id ?? "",
       customer: b.customer?._id ?? "",
       plannedQuantity: b.plannedQuantity ? String(b.plannedQuantity) : "",
@@ -129,13 +128,12 @@ export default function BatchesPage() {
           note: form.note,
         });
       } else {
-        if (!form.code || !form.product || !form.customer) {
-          setError("Vui lòng nhập mã lô, chọn mẫu hàng và khách hàng");
+        if (!form.product || !form.customer) {
+          setError("Vui lòng chọn mẫu hàng và khách hàng");
           setSaving(false);
           return;
         }
         await batchesApi.create({
-          code: form.code,
           product: form.product,
           customer: form.customer,
           plannedQuantity: form.plannedQuantity ? Number(form.plannedQuantity) : undefined,
@@ -165,14 +163,25 @@ export default function BatchesPage() {
     }
   }
 
-  async function handleDelete(b: Batch) {
-    const ok = await confirmDialog({ message: `Xoá lô hàng "${b.code}"?`, danger: true });
-    if (!ok) return;
+  async function handleToggleActive(b: Batch) {
+    if (b.active) {
+      const ok = await confirmDialog({
+        title: "Xác nhận vô hiệu hoá",
+        message: `Vô hiệu hoá lô hàng "${b.code}"?`,
+        confirmText: "Vô hiệu hoá",
+        danger: true,
+      });
+      if (!ok) return;
+    }
     try {
-      await batchesApi.remove(b._id);
+      if (b.active) {
+        await batchesApi.remove(b._id);
+      } else {
+        await batchesApi.update(b._id, { active: true });
+      }
       await load();
     } catch (err) {
-      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
+      notification.error({ message: err instanceof ApiError ? err.message : "Cập nhật trạng thái thất bại" });
     }
   }
 
@@ -256,7 +265,10 @@ export default function BatchesPage() {
                       )}
                     </TableCell>
                     <TableCell className="py-3 px-5">
-                      <Badge size="sm" color={STATUS_COLOR[b.status]}>{STATUS_LABEL[b.status]}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge size="sm" color={STATUS_COLOR[b.status]}>{STATUS_LABEL[b.status]}</Badge>
+                        {!b.active && <Badge size="sm" color="light">Đã vô hiệu hoá</Badge>}
+                      </div>
                     </TableCell>
                     <TableCell className="py-3 px-5">
                       <div className="flex items-center gap-3">
@@ -272,8 +284,16 @@ export default function BatchesPage() {
                         <button onClick={() => openEdit(b)} className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
                           <PencilIcon />
                         </button>
-                        <button onClick={() => handleDelete(b)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
-                          <TrashBinIcon />
+                        <button
+                          onClick={() => handleToggleActive(b)}
+                          title={b.active ? "Vô hiệu hoá" : "Kích hoạt lại"}
+                          className={
+                            b.active
+                              ? "text-gray-500 hover:text-error-500 dark:text-gray-400"
+                              : "text-gray-500 hover:text-success-500 dark:text-gray-400"
+                          }
+                        >
+                          {b.active ? <TrashBinIcon /> : <CheckCircleIcon />}
                         </button>
                       </div>
                     </TableCell>
@@ -296,10 +316,12 @@ export default function BatchesPage() {
                 {error}
               </div>
             )}
-            <div>
-              <Label>Mã lô {!editing && <span className="text-error-500">*</span>}</Label>
-              <Input placeholder="LO001" value={form.code} disabled={!!editing} onChange={(e) => setForm({ ...form, code: e.target.value })} />
-            </div>
+            {editing && (
+              <div>
+                <Label>Mã lô</Label>
+                <Input value={editing.code} disabled />
+              </div>
+            )}
             <div>
               <Label>Mẫu hàng {!editing && <span className="text-error-500">*</span>}</Label>
               {editing ? (

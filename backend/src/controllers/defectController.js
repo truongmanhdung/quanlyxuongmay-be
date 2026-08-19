@@ -59,7 +59,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  const { quantity, type, reason, reportedAt, processStage, worker } = req.body;
+  const { quantity, type, reason, reportedAt, processStage, worker, active } = req.body;
   const defect = await DefectReport.findByIdAndUpdate(
     req.params.id,
     {
@@ -68,6 +68,7 @@ const update = asyncHandler(async (req, res) => {
         type,
         reason,
         reportedAt,
+        active,
         processStage: processStage || undefined,
         worker: worker || undefined,
       },
@@ -80,7 +81,7 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const defect = await DefectReport.findByIdAndDelete(req.params.id);
+  const defect = await DefectReport.findByIdAndUpdate(req.params.id, { active: false });
   if (!defect) return res.status(404).json({ message: "Không tìm thấy báo cáo hàng lỗi/hoàn trả" });
   res.status(204).send();
 });

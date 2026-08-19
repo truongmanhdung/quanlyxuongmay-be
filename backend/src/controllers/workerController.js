@@ -1,5 +1,6 @@
 const Worker = require("../models/Worker");
 const asyncHandler = require("../utils/asyncHandler");
+const { createWithGeneratedCode } = require("../utils/codeGenerator");
 
 const list = asyncHandler(async (req, res) => {
   const { search, active } = req.query;
@@ -18,10 +19,11 @@ const getOne = asyncHandler(async (req, res) => {
   res.json(worker);
 });
 
+// Ma cong nhan (CN001, CN002...) tu sinh - day cung la ma dang nhap app cua cong nhan
 const create = asyncHandler(async (req, res) => {
-  const { code, name, phone, note } = req.body;
-  if (!code || !name) return res.status(400).json({ message: "Thiếu mã hoặc tên công nhân" });
-  const worker = await Worker.create({ code, name, phone, note });
+  const { name, phone, note } = req.body;
+  if (!name) return res.status(400).json({ message: "Thiếu tên công nhân" });
+  const worker = await createWithGeneratedCode(Worker, "CN", 3, (code) => ({ code, name, phone, note }));
   res.status(201).json(worker);
 });
 
@@ -37,7 +39,7 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const worker = await Worker.findByIdAndDelete(req.params.id);
+  const worker = await Worker.findByIdAndUpdate(req.params.id, { active: false });
   if (!worker) return res.status(404).json({ message: "Không tìm thấy công nhân" });
   res.status(204).send();
 });

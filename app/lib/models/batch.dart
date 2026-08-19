@@ -34,6 +34,7 @@ class Batch {
   final double? plannedQuantity;
   final BatchStatus status;
   final String? note;
+  final bool active;
   final double reportedQuantity;
   final double exportedQuantity;
 
@@ -45,6 +46,7 @@ class Batch {
     this.plannedQuantity,
     required this.status,
     this.note,
+    required this.active,
     required this.reportedQuantity,
     this.exportedQuantity = 0,
   });
@@ -57,6 +59,7 @@ class Batch {
         plannedQuantity: (json['plannedQuantity'] as num?)?.toDouble(),
         status: batchStatusFromString(json['status'] as String? ?? 'dang_lam'),
         note: json['note'] as String?,
+        active: json['active'] as bool? ?? true,
         reportedQuantity: (json['reportedQuantity'] as num?)?.toDouble() ?? 0,
         exportedQuantity: (json['exportedQuantity'] as num?)?.toDouble() ?? 0,
       );

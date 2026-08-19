@@ -5,8 +5,12 @@ class ProductService {
   final ApiClient api;
   ProductService(this.api);
 
-  Future<List<Product>> list({String? customer, String? search}) async {
-    final res = await api.get('/products', query: {'customer': customer ?? '', 'search': search ?? ''});
+  Future<List<Product>> list({String? customer, String? search, bool? active}) async {
+    final res = await api.get('/products', query: {
+      'customer': customer ?? '',
+      'search': search ?? '',
+      if (active != null) 'active': active.toString(),
+    });
     return (res as List<dynamic>).map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
   }
 
@@ -37,8 +41,13 @@ class ProductService {
     return Product.fromJson(res as Map<String, dynamic>);
   }
 
-  Future<Product> update(String id, {required String name, String? unit, double? standardPrice}) async {
-    final res = await api.put('/products/$id', body: {'name': name, 'unit': unit, 'standardPrice': standardPrice});
+  Future<Product> update(String id, {String? name, String? unit, double? standardPrice, bool? active}) async {
+    final res = await api.put('/products/$id', body: {
+      if (name != null) 'name': name,
+      if (unit != null) 'unit': unit,
+      if (standardPrice != null) 'standardPrice': standardPrice,
+      if (active != null) 'active': active,
+    });
     return Product.fromJson(res as Map<String, dynamic>);
   }
 
@@ -49,8 +58,18 @@ class ProductService {
     return ProcessStage.fromJson(res as Map<String, dynamic>);
   }
 
-  Future<ProcessStage> updateStage(String productId, String stageId, {required String name, required double unitPrice}) async {
-    final res = await api.put('/products/$productId/stages/$stageId', body: {'name': name, 'unitPrice': unitPrice});
+  Future<ProcessStage> updateStage(
+    String productId,
+    String stageId, {
+    String? name,
+    double? unitPrice,
+    bool? active,
+  }) async {
+    final res = await api.put('/products/$productId/stages/$stageId', body: {
+      if (name != null) 'name': name,
+      if (unitPrice != null) 'unitPrice': unitPrice,
+      if (active != null) 'active': active,
+    });
     return ProcessStage.fromJson(res as Map<String, dynamic>);
   }
 

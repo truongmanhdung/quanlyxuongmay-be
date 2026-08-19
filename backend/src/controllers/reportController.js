@@ -78,7 +78,7 @@ const recent = asyncHandler(async (req, res) => {
 const getOne = asyncHandler(async (req, res) => {
   const report = await ProductionReport.findById(req.params.id).populate(POPULATE);
   if (!report) return res.status(404).json({ message: "Không tìm thấy báo cáo sản lượng" });
-  if (req.auth.role === "worker" && report.worker._id.toString() !== req.auth.sub) {
+  if (req.auth.role === "worker" && report.worker?._id?.toString() !== req.auth.sub) {
     return res.status(403).json({ message: "Không có quyền xem báo cáo này" });
   }
   res.json(report);
@@ -94,7 +94,7 @@ const setStatus = asyncHandler(async (req, res) => {
     POPULATE
   );
   if (!report) return res.status(404).json({ message: "Không tìm thấy báo cáo sản lượng" });
-  emitToWorker(report.worker._id.toString(), "report:status", report);
+  if (report.worker) emitToWorker(report.worker._id.toString(), "report:status", report);
   res.json(report);
 });
 

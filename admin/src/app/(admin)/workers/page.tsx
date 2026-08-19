@@ -7,14 +7,14 @@ import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Badge from "@/components/ui/badge/Badge";
-import { PencilIcon, TrashBinIcon, PlusIcon } from "@/icons";
+import { PencilIcon, TrashBinIcon, PlusIcon, CheckCircleIcon, CopyIcon } from "@/icons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { workersApi } from "@/lib/resources/workers";
 import { Worker } from "@/lib/types";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 
-const emptyForm = { code: "", name: "", phone: "", note: "" };
+const emptyForm = { name: "", phone: "", note: "" };
 
 export default function WorkersPage() {
   const confirmDialog = useConfirmDialog();
@@ -26,6 +26,7 @@ export default function WorkersPage() {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [newCode, setNewCode] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -54,7 +55,7 @@ export default function WorkersPage() {
 
   function openEdit(w: Worker) {
     setEditing(w);
-    setForm({ code: w.code, name: w.name, phone: w.phone || "", note: w.note || "" });
+    setForm({ name: w.name, phone: w.phone || "", note: w.note || "" });
     setError(null);
     setIsOpen(true);
   }
@@ -66,10 +67,12 @@ export default function WorkersPage() {
     try {
       if (editing) {
         await workersApi.update(editing._id, { name: form.name, phone: form.phone, note: form.note });
+        setIsOpen(false);
       } else {
-        await workersApi.create(form);
+        const created = await workersApi.create(form);
+        setIsOpen(false);
+        setNewCode(created.code);
       }
-      setIsOpen(false);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Lưu công nhân thất bại");
@@ -78,14 +81,25 @@ export default function WorkersPage() {
     }
   }
 
-  async function handleDelete(w: Worker) {
-    const ok = await confirmDialog({ message: `Xoá công nhân "${w.name}" (${w.code})?`, danger: true });
-    if (!ok) return;
+  async function handleToggleActive(w: Worker) {
+    if (w.active) {
+      const ok = await confirmDialog({
+        title: "Xác nhận vô hiệu hoá",
+        message: `Vô hiệu hoá công nhân "${w.name}" (${w.code})?`,
+        confirmText: "Vô hiệu hoá",
+        danger: true,
+      });
+      if (!ok) return;
+    }
     try {
-      await workersApi.remove(w._id);
+      if (w.active) {
+        await workersApi.remove(w._id);
+      } else {
+        await workersApi.update(w._id, { active: true });
+      }
       await load();
     } catch (err) {
-      notification.error({ message: err instanceof ApiError ? err.message : "Xoá thất bại" });
+      notification.error({ message: err instanceof ApiError ? err.message : "Cập nhật trạng thái thất bại" });
     }
   }
 
@@ -146,8 +160,16 @@ export default function WorkersPage() {
                       <button onClick={() => openEdit(w)} className="text-gray-500 hover:text-brand-500 dark:text-gray-400">
                         <PencilIcon />
                       </button>
-                      <button onClick={() => handleDelete(w)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
-                        <TrashBinIcon />
+                      <button
+                        onClick={() => handleToggleActive(w)}
+                        title={w.active ? "Vô hiệu hoá" : "Kích hoạt lại"}
+                        className={
+                          w.active
+                            ? "text-gray-500 hover:text-error-500 dark:text-gray-400"
+                            : "text-gray-500 hover:text-success-500 dark:text-gray-400"
+                        }
+                      >
+                        {w.active ? <TrashBinIcon /> : <CheckCircleIcon />}
                       </button>
                     </div>
                   </TableCell>
@@ -169,15 +191,12 @@ export default function WorkersPage() {
                 {error}
               </div>
             )}
-            <div>
-              <Label>Mã đăng nhập {!editing && <span className="text-error-500">*</span>}</Label>
-              <Input
-                placeholder="A012"
-                value={form.code}
-                disabled={!!editing}
-                onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-              />
-            </div>
+            {editing && (
+              <div>
+                <Label>Mã đăng nhập</Label>
+                <Input value={editing.code} disabled />
+              </div>
+            )}
             <div>
               <Label>Họ tên <span className="text-error-500">*</span></Label>
               <Input placeholder="Nguyễn Văn A" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -195,6 +214,29 @@ export default function WorkersPage() {
               <Button type="submit" disabled={saving}>{saving ? "Đang lưu..." : "Lưu"}</Button>
             </div>
           </form>
+        </div>
+      </Modal>
+
+      <Modal isOpen={!!newCode} onClose={() => setNewCode(null)} className="max-w-sm m-4" showCloseButton={false}>
+        <div className="p-6 text-center">
+          <h3 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">Đã tạo công nhân</h3>
+          <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+            Báo mã đăng nhập này cho công nhân để họ đăng nhập vào app (không cần mật khẩu):
+          </p>
+          <div className="mb-5 flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-gray-50 py-4 dark:border-gray-800 dark:bg-white/[0.03]">
+            <span className="text-2xl font-bold tracking-widest text-brand-500">{newCode}</span>
+            <button
+              type="button"
+              title="Sao chép"
+              className="text-gray-400 hover:text-brand-500"
+              onClick={() => newCode && navigator.clipboard.writeText(newCode)}
+            >
+              <CopyIcon />
+            </button>
+          </div>
+          <Button className="w-full" onClick={() => setNewCode(null)}>
+            Đã ghi nhớ
+          </Button>
         </div>
       </Modal>
     </div>

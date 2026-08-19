@@ -112,12 +112,12 @@ export default function NotificationDropdown() {
                 className="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
               >
                 <span className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-50 text-brand-600 font-semibold text-sm shrink-0 dark:bg-brand-500/15 dark:text-brand-400">
-                  {r.worker.code.slice(0, 2)}
+                  {(r.worker?.code ?? "--").slice(0, 2)}
                 </span>
 
                 <span className="block">
                   <span className="mb-1 space-x-1 block text-theme-sm text-gray-500 dark:text-gray-400">
-                    <span className="font-medium text-gray-800 dark:text-white/90">{r.worker.name}</span>
+                    <span className="font-medium text-gray-800 dark:text-white/90">{r.worker?.name ?? "(công nhân đã xoá)"}</span>
                     <span>đã gửi sản lượng</span>
                     <span className="font-medium text-gray-800 dark:text-white/90">
                       {r.product?.name ?? "(mẫu hàng đã xoá)"} — {r.processStage?.name ?? "(công đoạn đã xoá)"}

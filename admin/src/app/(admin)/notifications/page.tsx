@@ -63,7 +63,7 @@ export default function NotificationsPage() {
     const handleNewReport = (report: ProductionReport) => {
       notification.info({
         title: "Báo cáo sản lượng mới",
-        description: `${report.worker.name} vừa gửi ${formatNumber(report.quantity)} sp — ${report.product?.name ?? "(mẫu hàng đã xoá)"} / ${report.processStage?.name ?? "(công đoạn đã xoá)"}`,
+        description: `${report.worker?.name ?? "(công nhân đã xoá)"} vừa gửi ${formatNumber(report.quantity)} sp — ${report.product?.name ?? "(mẫu hàng đã xoá)"} / ${report.processStage?.name ?? "(công đoạn đã xoá)"}`,
         placement: "topRight",
       });
       loadRef.current();
@@ -140,8 +140,8 @@ export default function NotificationsPage() {
               {reports.map((r) => (
                 <TableRow key={r._id}>
                   <TableCell className="py-3 px-5">
-                    <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{r.worker.name}</p>
-                    <span className="text-gray-500 text-theme-xs dark:text-gray-400">{r.worker.code}</span>
+                    <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{r.worker?.name ?? "(công nhân đã xoá)"}</p>
+                    <span className="text-gray-500 text-theme-xs dark:text-gray-400">{r.worker?.code}</span>
                   </TableCell>
                   <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">
                     {r.product?.name ?? "(mẫu hàng đã xoá)"} — {r.processStage?.name ?? "(công đoạn đã xoá)"}

@@ -5,6 +5,7 @@ const ProductionReport = require("../models/ProductionReport");
 const OrderDetail = require("../models/OrderDetail");
 const asyncHandler = require("../utils/asyncHandler");
 const { emitToAdmins } = require("../realtime/socket");
+const { createWithGeneratedCode } = require("../utils/codeGenerator");
 
 const POPULATE = [
   { path: "product", select: "name unit" },
@@ -13,6 +14,7 @@ const POPULATE = [
 
 // So luong da bao cao cho 1 lo = tong ProductionReport cung customer+product+batchNumber (khong phan biet hoa/thuong)
 async function reportedQuantityFor(batch) {
+  if (!batch.customer || !batch.product) return 0;
   const rows = await ProductionReport.aggregate([
     {
       $match: {
@@ -41,12 +43,13 @@ async function exportedQuantityFor(batch) {
 
 // GET /api/batches?status=&product=&customer=&search=
 const list = asyncHandler(async (req, res) => {
-  const { status, product, customer, search } = req.query;
+  const { status, product, customer, search, active } = req.query;
   const filter = {};
   if (status) filter.status = status;
   if (product) filter.product = product;
   if (customer) filter.customer = customer;
   if (search) filter.code = new RegExp(search, "i");
+  if (active !== undefined) filter.active = active === "true";
 
   const batches = await Batch.find(filter).populate(POPULATE).sort({ createdAt: -1 });
   const withProgress = await Promise.all(
@@ -63,14 +66,17 @@ const getOne = asyncHandler(async (req, res) => {
   const batch = await Batch.findById(req.params.id).populate(POPULATE);
   if (!batch) return res.status(404).json({ message: "Không tìm thấy lô hàng" });
 
-  const reports = await ProductionReport.find({
-    customer: batch.customer._id,
-    product: batch.product._id,
-    batchNumber: new RegExp(`^${batch.code}$`, "i"),
-  })
-    .populate("worker", "code name")
-    .populate("processStage", "name unitPrice")
-    .sort({ createdAt: -1 });
+  const reports =
+    batch.customer && batch.product
+      ? await ProductionReport.find({
+          customer: batch.customer._id,
+          product: batch.product._id,
+          batchNumber: new RegExp(`^${batch.code}$`, "i"),
+        })
+          .populate("worker", "code name")
+          .populate("processStage", "name unitPrice")
+          .sort({ createdAt: -1 })
+      : [];
 
   res.json({
     ...batch.toObject(),
@@ -80,11 +86,11 @@ const getOne = asyncHandler(async (req, res) => {
   });
 });
 
-// POST { code, product, customer, plannedQuantity, note }
+// POST { product, customer, plannedQuantity, note } - ma lo (LO001, LO002...) tu sinh
 const create = asyncHandler(async (req, res) => {
-  const { code, product, customer, plannedQuantity, note } = req.body;
-  if (!code || !product || !customer) {
-    return res.status(400).json({ message: "Thiếu mã lô, mẫu hàng hoặc khách hàng" });
+  const { product, customer, plannedQuantity, note } = req.body;
+  if (!product || !customer) {
+    return res.status(400).json({ message: "Thiếu mẫu hàng hoặc khách hàng" });
   }
   const [productExists, customerExists] = await Promise.all([
     Product.findById(product),
@@ -93,14 +99,14 @@ const create = asyncHandler(async (req, res) => {
   if (!productExists) return res.status(404).json({ message: "Không tìm thấy mẫu hàng" });
   if (!customerExists) return res.status(404).json({ message: "Không tìm thấy khách hàng" });
 
-  const batch = await Batch.create({
+  const batch = await createWithGeneratedCode(Batch, "LO", 3, (code) => ({
     code,
     product,
     customer,
     plannedQuantity: plannedQuantity || undefined,
     note,
     createdBy: req.auth.sub,
-  });
+  }));
   const populated = await batch.populate(POPULATE);
   const withProgress = { ...populated.toObject(), reportedQuantity: 0, exportedQuantity: 0 };
   emitToAdmins("batch:new", withProgress);
@@ -109,13 +115,13 @@ const create = asyncHandler(async (req, res) => {
 
 // PUT { plannedQuantity, note, status } - status chi cho phep dang_lam / chua_hoan_thanh (hoan_thanh phai qua /complete)
 const update = asyncHandler(async (req, res) => {
-  const { plannedQuantity, note, status } = req.body;
+  const { plannedQuantity, note, status, active } = req.body;
   if (status && !["dang_lam", "chua_hoan_thanh"].includes(status)) {
     return res.status(400).json({ message: "Dùng /complete để chuyển sang trạng thái Hoàn thành" });
   }
   const batch = await Batch.findByIdAndUpdate(
     req.params.id,
-    { $set: { plannedQuantity, note, ...(status ? { status } : {}) } },
+    { $set: { plannedQuantity, note, active, ...(status ? { status } : {}) } },
     { new: true, runValidators: true }
   ).populate(POPULATE);
   if (!batch) return res.status(404).json({ message: "Không tìm thấy lô hàng" });
@@ -146,7 +152,7 @@ const complete = asyncHandler(async (req, res) => {
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const batch = await Batch.findByIdAndDelete(req.params.id);
+  const batch = await Batch.findByIdAndUpdate(req.params.id, { active: false });
   if (!batch) return res.status(404).json({ message: "Không tìm thấy lô hàng" });
   res.status(204).send();
 });

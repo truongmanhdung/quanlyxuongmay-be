@@ -1,5 +1,6 @@
 const Customer = require("../models/Customer");
 const asyncHandler = require("../utils/asyncHandler");
+const { createWithGeneratedCode } = require("../utils/codeGenerator");
 
 const list = asyncHandler(async (req, res) => {
   const { search, active } = req.query;
@@ -22,10 +23,11 @@ const getOne = asyncHandler(async (req, res) => {
   res.json(customer);
 });
 
+// Ma khach hang (KH001, KH002...) tu sinh, khong nhan tu client
 const create = asyncHandler(async (req, res) => {
-  const { code, name, phone, note } = req.body;
-  if (!code || !name) return res.status(400).json({ message: "Thiếu mã hoặc tên khách hàng" });
-  const customer = await Customer.create({ code, name, phone, note });
+  const { name, phone, note } = req.body;
+  if (!name) return res.status(400).json({ message: "Thiếu tên khách hàng" });
+  const customer = await createWithGeneratedCode(Customer, "KH", 3, (code) => ({ code, name, phone, note }));
   res.status(201).json(customer);
 });
 
@@ -41,7 +43,7 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const customer = await Customer.findByIdAndDelete(req.params.id);
+  const customer = await Customer.findByIdAndUpdate(req.params.id, { active: false });
   if (!customer) return res.status(404).json({ message: "Không tìm thấy khách hàng" });
   res.status(204).send();
 });

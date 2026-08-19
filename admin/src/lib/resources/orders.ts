@@ -11,7 +11,6 @@ export const ordersApi = {
   },
   get: (id: string) => api.get<Order>(`/orders/${id}`),
   create: (data: {
-    code: string;
     type: "nhap" | "xuat";
     customer: string;
     date?: string;

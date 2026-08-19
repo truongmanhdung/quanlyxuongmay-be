@@ -47,7 +47,8 @@ export interface Worker {
 export interface OrderDetail {
   _id: string;
   order: string;
-  product: { _id: string; name: string; unit?: string } | string;
+  // co the null neu mau hang bi vo hieu hoa/xoa sau khi tao dong don hang
+  product: { _id: string; name: string; unit?: string } | string | null;
   batch?: { _id: string; code: string } | string | null;
   quantity: number;
   unitPrice: number;
@@ -58,9 +59,11 @@ export interface Order {
   _id: string;
   code: string;
   type: "nhap" | "xuat";
-  customer: { _id: string; code: string; name: string };
+  // co the null neu khach hang bi vo hieu hoa/xoa sau khi tao don hang
+  customer: { _id: string; code: string; name: string } | null;
   date: string;
   note?: string;
+  active: boolean;
   details?: OrderDetail[];
   createdAt: string;
 }
@@ -82,7 +85,8 @@ export interface StockSummary {
 
 export interface ProductionReport {
   _id: string;
-  worker: { _id: string; code: string; name: string };
+  // co the null neu cong nhan bi vo hieu hoa/xoa sau khi bao cao duoc gui
+  worker: { _id: string; code: string; name: string } | null;
   customer: { _id: string; code: string; name: string };
   // co the null neu mau hang / cong doan da bi xoa sau khi bao cao duoc gui
   product: { _id: string; name: string; unit?: string } | null;
@@ -150,6 +154,7 @@ export interface Batch {
   plannedQuantity?: number;
   status: "dang_lam" | "chua_hoan_thanh" | "hoan_thanh";
   note?: string;
+  active: boolean;
   reportedQuantity: number;
   exportedQuantity: number;
   completedAt?: string;
@@ -172,6 +177,7 @@ export interface DefectReport {
   type: "hong" | "tra_lai";
   reason?: string;
   reportedAt: string;
+  active: boolean;
   createdAt: string;
 }
 

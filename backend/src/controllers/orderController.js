@@ -3,6 +3,7 @@ const Order = require("../models/Order");
 const OrderDetail = require("../models/OrderDetail");
 const Product = require("../models/Product");
 const asyncHandler = require("../utils/asyncHandler");
+const { createWithGeneratedCode } = require("../utils/codeGenerator");
 
 const list = asyncHandler(async (req, res) => {
   const { type, customer, from, to } = req.query;
@@ -36,6 +37,7 @@ async function stockFor(customerId, productId) {
       $match: {
         product: new mongoose.Types.ObjectId(String(productId)),
         "order.customer": new mongoose.Types.ObjectId(String(customerId)),
+        "order.active": { $ne: false },
       },
     },
     { $group: { _id: "$order.type", total: { $sum: "$quantity" } } },
@@ -45,11 +47,13 @@ async function stockFor(customerId, productId) {
   return { imported, exported, remaining: imported - exported };
 }
 
-// POST { code, type, customer, date, note, details: [{ product, quantity, unitPrice }] }
+// POST { type, customer, date, note, details: [{ product, quantity, unitPrice }] }
+// Ma phieu tu sinh: Nhap -> PN0001, Xuat -> PX0001
 const create = asyncHandler(async (req, res) => {
-  const { code, type, customer, date, note, details } = req.body;
-  if (!code || !type || !customer) {
-    return res.status(400).json({ message: "Thiếu mã đơn, loại đơn hoặc khách hàng" });
+  const { type, customer, date, note, details } = req.body;
+  if (!customer) return res.status(400).json({ message: "Thiếu khách hàng" });
+  if (!["nhap", "xuat"].includes(type)) {
+    return res.status(400).json({ message: "Thiếu loại đơn hoặc loại đơn không hợp lệ" });
   }
 
   if (type === "xuat" && Array.isArray(details) && details.length > 0) {
@@ -68,7 +72,14 @@ const create = asyncHandler(async (req, res) => {
     }
   }
 
-  const order = await Order.create({ code, type, customer, date, note, createdBy: req.auth.sub });
+  const order = await createWithGeneratedCode(Order, type === "nhap" ? "PN" : "PX", 4, (code) => ({
+    code,
+    type,
+    customer,
+    date,
+    note,
+    createdBy: req.auth.sub,
+  }));
 
   let createdDetails = [];
   if (Array.isArray(details) && details.length > 0) {
@@ -86,10 +97,10 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  const { date, note, type } = req.body;
+  const { date, note, type, active } = req.body;
   const order = await Order.findByIdAndUpdate(
     req.params.id,
-    { $set: { date, note, type } },
+    { $set: { date, note, type, active } },
     { new: true, runValidators: true }
   );
   if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
@@ -97,9 +108,8 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const remove = asyncHandler(async (req, res) => {
-  const order = await Order.findByIdAndDelete(req.params.id);
+  const order = await Order.findByIdAndUpdate(req.params.id, { active: false });
   if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-  await OrderDetail.deleteMany({ order: order._id });
   res.status(204).send();
 });
 
@@ -185,7 +195,12 @@ const stockSummary = asyncHandler(async (req, res) => {
   const rows = await OrderDetail.aggregate([
     { $lookup: { from: "orders", localField: "order", foreignField: "_id", as: "order" } },
     { $unwind: "$order" },
-    { $match: { "order.customer": new mongoose.Types.ObjectId(String(customer)) } },
+    {
+      $match: {
+        "order.customer": new mongoose.Types.ObjectId(String(customer)),
+        "order.active": { $ne: false },
+      },
+    },
     {
       $group: {
         _id: { product: "$product", type: "$order.type" },

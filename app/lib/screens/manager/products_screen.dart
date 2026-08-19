@@ -10,6 +10,7 @@ import '../../models/product.dart';
 import '../../services/customer_service.dart';
 import '../../services/product_service.dart';
 import '../../widgets/app_form_sheet.dart';
+import '../../widgets/pill_badge.dart';
 import '../../widgets/row_icon_button.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -43,7 +44,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     });
     final api = context.read<ApiClient>();
     try {
-      final results = await Future.wait([ProductService(api).list(), CustomerService(api).list()]);
+      final results = await Future.wait([ProductService(api).list(), CustomerService(api).list(active: true)]);
       setState(() {
         products = results[0] as List<Product>;
         customers = results[1] as List<Customer>;
@@ -242,30 +243,36 @@ class _ProductsScreenState extends State<ProductsScreen> {
     if (saved == true) _load();
   }
 
-  Future<void> _delete(Product p) async {
+  Future<void> _toggleActive(Product p) async {
     final api = context.read<ApiClient>();
-    final confirmed = await showAppFormSheet<bool>(
-      context: context,
-      builder: (ctx) => AppFormSheetScaffold(
-        title: 'Xoá mẫu hàng',
-        content: Text('Xoá mẫu hàng "${p.name}"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error500),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xoá'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
+    if (p.active) {
+      final confirmed = await showAppFormSheet<bool>(
+        context: context,
+        builder: (ctx) => AppFormSheetScaffold(
+          title: 'Vô hiệu hoá mẫu hàng',
+          content: Text('Vô hiệu hoá mẫu hàng "${p.name}"?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error500),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Vô hiệu hoá'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
     try {
-      await ProductService(api).remove(p.id);
+      if (p.active) {
+        await ProductService(api).remove(p.id);
+      } else {
+        await ProductService(api).update(p.id, active: true);
+      }
       _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xoá mẫu hàng thất bại')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật trạng thái thất bại')));
       }
     }
   }
@@ -296,15 +303,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                PillBadge(
+                                  label: p.active ? 'Hoạt động' : 'Ngừng',
+                                  color: p.active ? AppColors.success500 : AppColors.gray400,
+                                ),
+                                const SizedBox(width: 4),
                                 RowIconButton(
                                   icon: Icons.edit_outlined,
                                   color: AppColors.gray500,
                                   onPressed: () => _showEditDialog(p),
                                 ),
                                 RowIconButton(
-                                  icon: Icons.delete_outline,
-                                  color: AppColors.error500,
-                                  onPressed: () => _delete(p),
+                                  icon: p.active ? Icons.block_outlined : Icons.check_circle_outline,
+                                  color: p.active ? AppColors.error500 : AppColors.success500,
+                                  onPressed: () => _toggleActive(p),
                                 ),
                                 Icon(Icons.chevron_right_rounded, color: AppColors.gray400),
                               ],
@@ -540,30 +552,36 @@ class _StagesScreenState extends State<_StagesScreen> {
     if (saved == true) _load();
   }
 
-  Future<void> _delete(ProcessStage s) async {
+  Future<void> _toggleActive(ProcessStage s) async {
     final api = context.read<ApiClient>();
-    final confirmed = await showAppFormSheet<bool>(
-      context: context,
-      builder: (ctx) => AppFormSheetScaffold(
-        title: 'Xoá công đoạn',
-        content: Text('Xoá công đoạn "${s.name}"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error500),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xoá'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
+    if (s.active) {
+      final confirmed = await showAppFormSheet<bool>(
+        context: context,
+        builder: (ctx) => AppFormSheetScaffold(
+          title: 'Vô hiệu hoá công đoạn',
+          content: Text('Vô hiệu hoá công đoạn "${s.name}"?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error500),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Vô hiệu hoá'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
     try {
-      await ProductService(api).removeStage(widget.product.id, s.id);
+      if (s.active) {
+        await ProductService(api).removeStage(widget.product.id, s.id);
+      } else {
+        await ProductService(api).updateStage(widget.product.id, s.id, active: true);
+      }
       _load();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xoá công đoạn thất bại')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật trạng thái thất bại')));
       }
     }
   }
@@ -590,6 +608,9 @@ class _StagesScreenState extends State<_StagesScreen> {
                             return Card(
                               child: ListTile(
                                 title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                subtitle: s.active
+                                    ? null
+                                    : const Text('Ngừng', style: TextStyle(color: AppColors.gray400)),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -601,9 +622,9 @@ class _StagesScreenState extends State<_StagesScreen> {
                                       onPressed: () => _showEditDialog(s),
                                     ),
                                     RowIconButton(
-                                      icon: Icons.delete_outline,
-                                      color: AppColors.error500,
-                                      onPressed: () => _delete(s),
+                                      icon: s.active ? Icons.block_outlined : Icons.check_circle_outline,
+                                      color: s.active ? AppColors.error500 : AppColors.success500,
+                                      onPressed: () => _toggleActive(s),
                                     ),
                                   ],
                                 ),

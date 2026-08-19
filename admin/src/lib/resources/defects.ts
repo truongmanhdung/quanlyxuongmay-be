@@ -23,7 +23,10 @@ export const defectsApi = {
   }) => api.post<DefectReport>("/defects", data),
   update: (
     id: string,
-    data: Partial<Pick<DefectReport, "quantity" | "type" | "reason">> & { processStage?: string; worker?: string }
+    data: Partial<Pick<DefectReport, "quantity" | "type" | "reason" | "active">> & {
+      processStage?: string;
+      worker?: string;
+    }
   ) => api.put<DefectReport>(`/defects/${id}`, data),
   remove: (id: string) => api.del<void>(`/defects/${id}`),
   summary: (from: string, to: string) => api.get<DefectSummary>(`/defects/summary?from=${from}&to=${to}`),
