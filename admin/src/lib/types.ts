@@ -68,8 +68,10 @@ export interface Order {
 }
 
 export interface StockInfo {
-  imported: number;
-  exported: number;
+  imported: number; // vai/phoi khach giao
+  exported: number; // thanh pham da ban giao
+  finished: number; // thanh pham hoan chinh = min san luong cac cong doan
+  canExport: number; // con co the ban giao cho khach
   remaining: number;
 }
 
@@ -164,9 +166,6 @@ export interface RevenueExportLine {
   quantity: number;
   unitPrice: number;
   amount: number;
-  stages: { name: string; unitPrice: number }[];
-  stageCost: number; // tong don gia gia cong 1 sp
-  grossMargin: number; // don gia ban - chi phi cong doan
 }
 
 export interface RevenueDetail {

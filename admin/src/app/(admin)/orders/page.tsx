@@ -230,16 +230,34 @@ function StockPanel({ customers }: { customers: Customer[] }) {
   }, [customer]);
 
   const columns = [
-    { title: "Mã hàng", dataIndex: ["product", "code"], key: "code", width: 120 },
     { title: "Tên hàng", dataIndex: ["product", "name"], key: "name" },
-    { title: "Đã nhập", dataIndex: "imported", key: "imported", align: "right" as const, render: (v: number) => formatNumber(v) },
-    { title: "Đã xuất", dataIndex: "exported", key: "exported", align: "right" as const, render: (v: number) => formatNumber(v) },
     {
-      title: "Còn lại",
-      dataIndex: "remaining",
-      key: "remaining",
+      title: "Vải đã nhận",
+      dataIndex: "imported",
+      key: "imported",
       align: "right" as const,
-      render: (v: number) => <span className={`font-medium ${v < 0 ? "text-error-500" : ""}`}>{formatNumber(v)}</span>,
+      render: (v: number) => formatNumber(v),
+    },
+    {
+      title: "TP hoàn thành",
+      dataIndex: "finished",
+      key: "finished",
+      align: "right" as const,
+      render: (v: number) => formatNumber(v),
+    },
+    {
+      title: "Đã giao khách",
+      dataIndex: "exported",
+      key: "exported",
+      align: "right" as const,
+      render: (v: number) => formatNumber(v),
+    },
+    {
+      title: "Còn giao được",
+      dataIndex: "canExport",
+      key: "canExport",
+      align: "right" as const,
+      render: (v: number) => <span className="font-medium text-brand-600 dark:text-brand-400">{formatNumber(v)}</span>,
     },
   ];
 
@@ -309,7 +327,7 @@ function CreateOrderModal({
       .forEach((id) => {
         ordersApi
           .stock(customer, id)
-          .then((res) => setStockMap((prev) => ({ ...prev, [id]: res.remaining })))
+          .then((res) => setStockMap((prev) => ({ ...prev, [id]: res.canExport })))
           .catch(() => {});
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -344,10 +362,10 @@ function CreateOrderModal({
         requestedByProduct.set(r.product, (requestedByProduct.get(r.product) || 0) + Number(r.quantity || 0));
       });
       for (const [productId, requestedQty] of requestedByProduct) {
-        const remaining = stockMap[productId];
-        if (remaining !== undefined && requestedQty > remaining) {
+        const canExport = stockMap[productId];
+        if (canExport !== undefined && requestedQty > canExport) {
           const p = products.find((pp) => pp._id === productId);
-          setError(`Xuất vượt quá tồn kho mẫu hàng ${p ? p.name : productId} (còn lại: ${remaining})`);
+          setError(`Mẫu hàng ${p ? p.name : productId}: chỉ giao được tối đa ${canExport} thành phẩm đã hoàn thành đủ công đoạn`);
           return;
         }
       }
@@ -452,7 +470,7 @@ function CreateOrderModal({
                     </select>
                     {type === "xuat" && r.product in stockMap && (
                       <span className={`mt-1 block text-xs ${stockMap[r.product] < Number(r.quantity || 0) ? "text-error-500" : "text-gray-400"}`}>
-                        Tồn kho khả dụng: {formatNumber(stockMap[r.product])}
+                        Còn giao được: {formatNumber(stockMap[r.product])} (thành phẩm đã hoàn thành đủ công đoạn)
                       </span>
                     )}
                   </div>

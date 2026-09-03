@@ -107,9 +107,16 @@ class _StockScreenState extends State<StockScreen> {
                 else if (rows.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(child: Text('Khách hàng này chưa có phiếu nhập/xuất nào', style: TextStyle(color: AppColors.gray500))),
+                    child: Center(child: Text('Khách hàng này chưa có mẫu hàng nào', style: TextStyle(color: AppColors.gray500))),
                   )
-                else
+                else ...[
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'TP hoàn thành = số sản phẩm đã làm xong đủ tất cả công đoạn. Chỉ giao cho khách trong phạm vi số này.',
+                      style: TextStyle(color: AppColors.gray400, fontSize: 11.5),
+                    ),
+                  ),
                   ...rows.map(
                     (r) => Card(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -123,16 +130,17 @@ class _StockScreenState extends State<StockScreen> {
                               style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            Wrap(
+                              spacing: 20,
+                              runSpacing: 10,
                               children: [
-                                _StockStat(label: 'Đã nhập', value: r.imported),
-                                _StockStat(label: 'Đã xuất', value: r.exported),
+                                _StockStat(label: 'Vải đã nhận', value: r.imported),
+                                _StockStat(label: 'TP hoàn thành', value: r.finished),
+                                _StockStat(label: 'Đã giao', value: r.exported),
                                 _StockStat(
-                                  label: 'Còn lại',
-                                  value: r.remaining,
+                                  label: 'Còn giao được',
+                                  value: r.canExport,
                                   emphasize: true,
-                                  negative: r.remaining < 0,
                                 ),
                               ],
                             ),
@@ -141,6 +149,7 @@ class _StockScreenState extends State<StockScreen> {
                       ),
                     ),
                   ),
+                ],
               ],
             ),
     );
@@ -151,13 +160,12 @@ class _StockStat extends StatelessWidget {
   final String label;
   final double value;
   final bool emphasize;
-  final bool negative;
 
-  const _StockStat({required this.label, required this.value, this.emphasize = false, this.negative = false});
+  const _StockStat({required this.label, required this.value, this.emphasize = false});
 
   @override
   Widget build(BuildContext context) {
-    final color = negative ? AppColors.error500 : (emphasize ? AppColors.brand600 : AppColors.gray700);
+    final color = emphasize ? AppColors.brand600 : AppColors.gray700;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

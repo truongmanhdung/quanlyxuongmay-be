@@ -62,16 +62,27 @@ class Order {
 
 class StockSummaryRow {
   final ProductRef product;
-  final double imported;
-  final double exported;
+  final double imported; // vai/phoi khach giao
+  final double exported; // thanh pham da ban giao
+  final double finished; // thanh pham hoan chinh = min san luong cac cong doan
+  final double canExport; // con co the ban giao cho khach
   final double remaining;
 
-  StockSummaryRow({required this.product, required this.imported, required this.exported, required this.remaining});
+  StockSummaryRow({
+    required this.product,
+    required this.imported,
+    required this.exported,
+    required this.finished,
+    required this.canExport,
+    required this.remaining,
+  });
 
   factory StockSummaryRow.fromJson(Map<String, dynamic> json) => StockSummaryRow(
         product: ProductRef.fromJson(json['product'] as Map<String, dynamic>),
-        imported: (json['imported'] as num).toDouble(),
-        exported: (json['exported'] as num).toDouble(),
-        remaining: (json['remaining'] as num).toDouble(),
+        imported: (json['imported'] as num?)?.toDouble() ?? 0,
+        exported: (json['exported'] as num?)?.toDouble() ?? 0,
+        finished: (json['finished'] as num?)?.toDouble() ?? 0,
+        canExport: (json['canExport'] as num?)?.toDouble() ?? 0,
+        remaining: (json['remaining'] as num?)?.toDouble() ?? 0,
       );
 }

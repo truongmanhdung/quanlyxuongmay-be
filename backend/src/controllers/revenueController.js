@@ -28,19 +28,6 @@ async function exportLines(range, customerId) {
     { $match: match },
     { $lookup: { from: "products", localField: "product", foreignField: "_id", as: "product" } },
     { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } },
-    // Cac cong doan cua mau hang nay + don gia gia cong (de doi chieu voi don gia ban)
-    {
-      $lookup: {
-        from: "processstages",
-        let: { pid: "$product._id" },
-        pipeline: [
-          { $match: { $expr: { $and: [{ $eq: ["$product", "$$pid"] }, { $ne: ["$active", false] }] } } },
-          { $sort: { name: 1 } },
-          { $project: { _id: 0, name: 1, unitPrice: 1 } },
-        ],
-        as: "stages",
-      },
-    },
     { $sort: { "order.date": 1, "order.code": 1 } },
     {
       $project: {
@@ -53,28 +40,20 @@ async function exportLines(range, customerId) {
         quantity: "$quantity",
         unitPrice: "$unitPrice",
         amount: { $multiply: ["$quantity", { $ifNull: ["$unitPrice", 0] }] },
-        stages: "$stages",
-        stageCost: { $sum: "$stages.unitPrice" },
       },
     },
   ]);
 }
 
 function toLineDto(l) {
-  const unitPrice = l.unitPrice || 0;
-  const stageCost = l.stageCost || 0;
-  const stages = (l.stages || []).map((s) => ({ name: s.name, unitPrice: s.unitPrice || 0 }));
   return {
     order: l.order,
     orderCode: l.orderCode,
     date: l.date,
     productName: l.productName,
     quantity: l.quantity,
-    unitPrice,
+    unitPrice: l.unitPrice || 0,
     amount: Math.round(l.amount || 0),
-    stages,
-    stageCost, // tong don gia gia cong 1 sp (chi phi cong doan)
-    grossMargin: unitPrice - stageCost, // lai gop 1 sp = don gia ban - chi phi cong doan
   };
 }
 
@@ -212,58 +191,38 @@ const exportFile = asyncHandler(async (req, res) => {
   const fileName = `doanh-thu-${slip.customer ? slip.customer.code : "khach"}-${periodFileSuffix(slip)}`;
   const lines = [...slip.lines].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  const stageLabel = (l) =>
-    (l.stages || []).map((s) => `${s.name} (${formatCurrency(s.unitPrice)})`).join(", ") || "—";
+  const dateLabelOf = (l) => (l.date ? new Date(l.date).toLocaleDateString("vi-VN") : "");
 
   if (format === "xlsx") {
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Doanh thu");
+    const sheet = workbook.addWorksheet("Bảng kê");
     sheet.columns = [
-      { key: "c1", width: 13 },
-      { key: "c2", width: 14 },
-      { key: "c3", width: 22 },
-      { key: "c4", width: 34 },
-      { key: "c5", width: 10 },
-      { key: "c6", width: 13 },
-      { key: "c7", width: 13 },
-      { key: "c8", width: 13 },
-      { key: "c9", width: 16 },
+      { key: "c1", width: 5 },
+      { key: "c2", width: 13 },
+      { key: "c3", width: 14 },
+      { key: "c4", width: 32 },
+      { key: "c5", width: 12 },
+      { key: "c6", width: 14 },
+      { key: "c7", width: 18 },
     ];
 
-    sheet.addRow([`Doanh thu - ${customerName} - Kỳ ${formatPeriodLabel(slip)}`]);
-    sheet.mergeCells("A1:I1");
-    sheet.getRow(1).font = { bold: true, size: 13 };
+    sheet.addRow(["BẢNG KÊ HÀNG GIA CÔNG"]);
+    sheet.mergeCells("A1:G1");
+    sheet.getRow(1).font = { bold: true, size: 14 };
+    sheet.getRow(1).alignment = { horizontal: "center" };
+    sheet.addRow([`Khách hàng: ${customerName}`]);
+    sheet.addRow([`Kỳ: ${formatPeriodLabel(slip)}`]);
+    sheet.addRow([`Ngày lập: ${new Date(slip.issuedAt).toLocaleDateString("vi-VN")}`]);
     sheet.addRow([]);
 
-    const headerRow = sheet.addRow([
-      "Ngày xuất",
-      "Phiếu xuất",
-      "Mẫu hàng",
-      "Công đoạn (đơn giá gia công)",
-      "Số lượng",
-      "Đơn giá bán",
-      "Chi phí công đoạn/sp",
-      "Lãi gộp/sp",
-      "Thành tiền",
-    ]);
+    const headerRow = sheet.addRow(["STT", "Ngày xuất", "Phiếu xuất", "Mẫu hàng", "Số lượng", "Đơn giá", "Thành tiền"]);
     headerRow.font = { bold: true };
 
-    lines.forEach((l) => {
-      sheet.addRow([
-        l.date ? new Date(l.date).toLocaleDateString("vi-VN") : "",
-        l.orderCode || "",
-        l.productName || "",
-        stageLabel(l),
-        l.quantity,
-        l.unitPrice,
-        l.stageCost || 0,
-        (l.unitPrice || 0) - (l.stageCost || 0),
-        l.amount,
-      ]);
+    lines.forEach((l, i) => {
+      sheet.addRow([i + 1, dateLabelOf(l), l.orderCode || "", l.productName || "", l.quantity, l.unitPrice, l.amount]);
     });
 
-    sheet.addRow([]);
-    const totalRow = sheet.addRow(["", "", "", "TỔNG CỘNG", slip.totalQuantity, "", "", "", slip.totalAmount]);
+    const totalRow = sheet.addRow(["", "", "", "TỔNG CỘNG", slip.totalQuantity, "", slip.totalAmount]);
     totalRow.font = { bold: true, size: 12 };
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -272,7 +231,7 @@ const exportFile = asyncHandler(async (req, res) => {
     return res.end();
   }
 
-  // PDF
+  // PDF - bang ke hang gia cong de gui khach hang thu tien
   const doc = new PDFDocument({ margin: 40, size: "A4" });
   doc.registerFont("VN", FONT_REGULAR);
   doc.registerFont("VN-Bold", FONT_BOLD);
@@ -281,82 +240,98 @@ const exportFile = asyncHandler(async (req, res) => {
   res.setHeader("Content-Disposition", `attachment; filename="${fileName}.pdf"`);
   doc.pipe(res);
 
-  doc.font("VN-Bold").fontSize(16).text("PHIẾU DOANH THU", { align: "center" });
-  doc.moveDown(0.5);
-  doc.font("VN").fontSize(11).text(`Khách hàng: ${customerName}`);
-  doc.text(`Kỳ: ${formatPeriodLabel(slip)}`);
-  doc.text(`Ngày xuất: ${new Date(slip.issuedAt).toLocaleDateString("vi-VN")}`);
-  doc.moveDown();
-
   const startX = doc.page.margins.left;
   const contentWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+  doc.font("VN-Bold").fontSize(16).text("BẢNG KÊ HÀNG GIA CÔNG", { align: "center" });
+  doc.moveDown(0.6);
+  doc.font("VN").fontSize(11).text(`Khách hàng: ${customerName}`);
+  doc.text(`Kỳ: ${formatPeriodLabel(slip)}`);
+  doc.text(`Ngày lập: ${new Date(slip.issuedAt).toLocaleDateString("vi-VN")}`);
+  doc.moveDown(0.8);
+
+  // cot: STT | Ngay | Phieu | Mau hang | SL | Don gia | Thanh tien
+  const cols = [
+    { key: "stt", label: "STT", w: 30, align: "left" },
+    { key: "date", label: "Ngày xuất", w: 62, align: "left" },
+    { key: "code", label: "Phiếu", w: 56, align: "left" },
+    { key: "name", label: "Mẫu hàng", w: contentWidth - 30 - 62 - 56 - 55 - 78 - 90, align: "left" },
+    { key: "qty", label: "Số lượng", w: 55, align: "right" },
+    { key: "price", label: "Đơn giá", w: 78, align: "right" },
+    { key: "amount", label: "Thành tiền", w: 90, align: "right" },
+  ];
+
   let y = doc.y;
 
-  const ensureSpace = (needed) => {
-    if (y > 780 - needed) {
+  const drawRow = (cells, opts = {}) => {
+    const { bold = false, size = 9.5, padY = 5 } = opts;
+    doc.font(bold ? "VN-Bold" : "VN").fontSize(size);
+    const heights = cols.map((c, i) => doc.heightOfString(String(cells[i] ?? ""), { width: c.w - 8 }));
+    const rowH = Math.max(...heights) + padY * 2;
+    if (y + rowH > doc.page.height - doc.page.margins.bottom - 90) {
       doc.addPage();
-      y = 40;
+      y = doc.page.margins.top;
     }
+    let x = startX;
+    cols.forEach((c, i) => {
+      doc.text(String(cells[i] ?? ""), x + 4, y + padY, { width: c.w - 8, align: c.align });
+      x += c.w;
+    });
+    y += rowH;
+    doc
+      .moveTo(startX, y)
+      .lineTo(startX + contentWidth, y)
+      .strokeColor("#DDDDDD")
+      .lineWidth(0.5)
+      .stroke();
   };
 
+  // header
+  doc
+    .rect(startX, y, contentWidth, 20)
+    .fillOpacity(0.06)
+    .fill("#000000")
+    .fillOpacity(1)
+    .fillColor("black");
+  drawRow(cols.map((c) => c.label), { bold: true, size: 9.5, padY: 5 });
+
   if (lines.length === 0) {
-    doc.font("VN").fontSize(10).text("Không có phiếu xuất nào trong kỳ này.", startX, y);
-    y = doc.y + 10;
+    doc.font("VN").fontSize(10).text("Không có phiếu xuất nào trong kỳ này.", startX + 4, y + 6);
+    y += 24;
   }
 
-  lines.forEach((l) => {
-    ensureSpace(48);
-    const dateLabel = l.date ? new Date(l.date).toLocaleDateString("vi-VN") : "—";
-    doc
-      .font("VN-Bold")
-      .fontSize(10)
-      .text(`•  ${l.productName} — Phiếu ${l.orderCode || "—"} — ${dateLabel}`, startX + 10, y, {
-        width: contentWidth - 10,
-      });
-    y = doc.y + 2;
-    doc
-      .font("VN")
-      .fontSize(9.5)
-      .text(
-        `SL ${formatNumber(l.quantity)} × đơn giá bán ${formatCurrency(l.unitPrice)} = ${formatCurrency(l.amount)}`,
-        startX + 22,
-        y,
-        { width: contentWidth - 22 }
-      );
-    y = doc.y + 2;
-    doc
-      .font("VN")
-      .fontSize(9)
-      .fillColor("#555555")
-      .text(`Công đoạn: ${stageLabel(l)}`, startX + 22, y, { width: contentWidth - 22 });
-    y = doc.y + 2;
-    doc
-      .font("VN")
-      .fontSize(9)
-      .text(
-        `Chi phí công đoạn ${formatCurrency(l.stageCost || 0)}/sp · Lãi gộp ${formatCurrency(
-          (l.unitPrice || 0) - (l.stageCost || 0)
-        )}/sp`,
-        startX + 22,
-        y,
-        { width: contentWidth - 22 }
-      );
-    doc.fillColor("black");
-    y = doc.y + 8;
+  lines.forEach((l, i) => {
+    drawRow([
+      i + 1,
+      dateLabelOf(l),
+      l.orderCode || "",
+      l.productName || "",
+      formatNumber(l.quantity),
+      formatCurrency(l.unitPrice),
+      formatCurrency(l.amount),
+    ]);
   });
 
-  ensureSpace(60);
-  y += 6;
-  doc
-    .moveTo(startX, y)
-    .lineTo(startX + contentWidth, y)
-    .strokeColor("#888888")
-    .stroke();
-  y += 12;
+  // total
+  drawRow(["", "", "", "TỔNG CỘNG", formatNumber(slip.totalQuantity), "", formatCurrency(slip.totalAmount)], {
+    bold: true,
+    size: 11,
+    padY: 7,
+  });
 
-  doc.font("VN-Bold").fontSize(11).text(`Tổng số lượng: ${formatNumber(slip.totalQuantity)}`, startX, y);
-  y += 18;
-  doc.font("VN-Bold").fontSize(13).text(`Tổng doanh thu: ${formatCurrency(slip.totalAmount)}`, startX, y);
+  y += 30;
+  if (y > doc.page.height - doc.page.margins.bottom - 70) {
+    doc.addPage();
+    y = doc.page.margins.top;
+  }
+  const half = contentWidth / 2;
+  doc.font("VN").fontSize(10);
+  doc.text("Người lập phiếu", startX, y, { width: half, align: "center" });
+  doc.text("Xác nhận của khách hàng", startX + half, y, { width: half, align: "center" });
+  doc.font("VN").fontSize(8).fillColor("#666666");
+  doc.text("(ký, ghi rõ họ tên)", startX, y + 14, { width: half, align: "center" });
+  doc.text("(ký, ghi rõ họ tên)", startX + half, y + 14, { width: half, align: "center" });
+  doc.fillColor("black");
 
   doc.end();
 });

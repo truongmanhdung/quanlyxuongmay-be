@@ -35,17 +35,6 @@ class RevenueSummary {
       );
 }
 
-class RevenueStage {
-  final String name;
-  final double unitPrice;
-  RevenueStage({required this.name, required this.unitPrice});
-
-  factory RevenueStage.fromJson(Map<String, dynamic> json) => RevenueStage(
-        name: json['name'] as String? ?? '',
-        unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0,
-      );
-}
-
 class RevenueExportLine {
   final String orderId;
   final String orderCode;
@@ -54,9 +43,6 @@ class RevenueExportLine {
   final double quantity;
   final double unitPrice;
   final double amount;
-  final List<RevenueStage> stages;
-  final double stageCost; // tong don gia gia cong 1 sp
-  final double grossMargin; // don gia ban - chi phi cong doan
 
   RevenueExportLine({
     required this.orderId,
@@ -66,9 +52,6 @@ class RevenueExportLine {
     required this.quantity,
     required this.unitPrice,
     required this.amount,
-    required this.stages,
-    required this.stageCost,
-    required this.grossMargin,
   });
 
   factory RevenueExportLine.fromJson(Map<String, dynamic> json) => RevenueExportLine(
@@ -79,11 +62,6 @@ class RevenueExportLine {
         quantity: (json['quantity'] as num?)?.toDouble() ?? 0,
         unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0,
         amount: (json['amount'] as num?)?.toDouble() ?? 0,
-        stages: (json['stages'] as List<dynamic>? ?? [])
-            .map((e) => RevenueStage.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        stageCost: (json['stageCost'] as num?)?.toDouble() ?? 0,
-        grossMargin: (json['grossMargin'] as num?)?.toDouble() ?? 0,
       );
 }
 

@@ -156,7 +156,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     if (ctx.mounted) Navigator.pop(ctx, true);
                   } catch (e) {
                     if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Tạo phiếu thất bại')));
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(content: Text(e is ApiException ? e.message : 'Tạo phiếu thất bại')),
+                      );
                     }
                   }
                 },
