@@ -2,32 +2,8 @@ const mongoose = require("mongoose");
 const Order = require("../models/Order");
 const OrderDetail = require("../models/OrderDetail");
 const Product = require("../models/Product");
-const ProcessStage = require("../models/ProcessStage");
-const ProductionReport = require("../models/ProductionReport");
 const asyncHandler = require("../utils/asyncHandler");
 const { createWithGeneratedCode } = require("../utils/codeGenerator");
-
-// So thanh pham HOAN CHINH cua 1 mau hang = min san luong da duyet qua TUNG cong doan.
-// VD ao co 3 cong doan, cat xong 2000, may xong 1000, dong goi xong 3000 -> chi 1000 sp hoan chinh.
-// Cong doan nao chua co bao cao nao -> coi nhu 0 -> min = 0.
-async function finishedQuantityFor(customerId, productId) {
-  const stages = await ProcessStage.find({ product: productId, active: true }).select("_id");
-  if (stages.length === 0) return 0; // chua khai bao cong doan thi khong the co thanh pham
-  const stageIds = stages.map((s) => s._id);
-  const rows = await ProductionReport.aggregate([
-    {
-      $match: {
-        customer: new mongoose.Types.ObjectId(String(customerId)),
-        product: new mongoose.Types.ObjectId(String(productId)),
-        processStage: { $in: stageIds },
-        status: "confirmed",
-      },
-    },
-    { $group: { _id: "$processStage", total: { $sum: "$quantity" } } },
-  ]);
-  const byStage = new Map(rows.map((r) => [r._id.toString(), r.total]));
-  return Math.min(...stageIds.map((id) => byStage.get(id.toString()) || 0));
-}
 
 const list = asyncHandler(async (req, res) => {
   const { type, customer, from, to } = req.query;
@@ -51,31 +27,23 @@ const getOne = asyncHandler(async (req, res) => {
 });
 
 // Ton kho = tong so luong da Nhap - tong so luong da Xuat, theo 1 khach hang + 1 ma hang
+// Ton = tong SL da Nhap - tong SL da Xuat, theo 1 khach hang + 1 ma hang (khong lien quan cong doan)
 async function stockFor(customerId, productId) {
-  const [rows, finished] = await Promise.all([
-    OrderDetail.aggregate([
-      { $lookup: { from: "orders", localField: "order", foreignField: "_id", as: "order" } },
-      { $unwind: "$order" },
-      {
-        $match: {
-          product: new mongoose.Types.ObjectId(String(productId)),
-          "order.customer": new mongoose.Types.ObjectId(String(customerId)),
-          "order.active": { $ne: false },
-        },
+  const rows = await OrderDetail.aggregate([
+    { $lookup: { from: "orders", localField: "order", foreignField: "_id", as: "order" } },
+    { $unwind: "$order" },
+    {
+      $match: {
+        product: new mongoose.Types.ObjectId(String(productId)),
+        "order.customer": new mongoose.Types.ObjectId(String(customerId)),
+        "order.active": { $ne: false },
       },
-      { $group: { _id: "$order.type", total: { $sum: "$quantity" } } },
-    ]),
-    finishedQuantityFor(customerId, productId),
+    },
+    { $group: { _id: "$order.type", total: { $sum: "$quantity" } } },
   ]);
   const imported = rows.find((r) => r._id === "nhap")?.total || 0;
   const exported = rows.find((r) => r._id === "xuat")?.total || 0;
-  return {
-    imported,
-    exported,
-    finished, // so thanh pham hoan chinh = min san luong cac cong doan
-    canExport: Math.max(0, finished - exported), // con co the ban giao cho khach
-    remaining: imported - exported, // vai/phoi con lai tai xuong (giu de tuong thich)
-  };
+  return { imported, exported, remaining: imported - exported };
 }
 
 // POST { type, customer, date, note, details: [{ product, quantity, unitPrice }] }
@@ -93,11 +61,11 @@ const create = asyncHandler(async (req, res) => {
       requestedByProduct.set(d.product, (requestedByProduct.get(d.product) || 0) + Number(d.quantity || 0));
     });
     for (const [productId, requestedQty] of requestedByProduct) {
-      const { canExport } = await stockFor(customer, productId);
-      if (requestedQty > canExport) {
+      const { remaining } = await stockFor(customer, productId);
+      if (requestedQty > remaining) {
         const product = await Product.findById(productId);
         return res.status(400).json({
-          message: `Mẫu hàng ${product ? product.name : productId}: chỉ xuất được tối đa ${canExport} (số thành phẩm đã hoàn thành đủ các công đoạn, trừ đã xuất)`,
+          message: `Xuất vượt quá tồn kho mẫu hàng ${product ? product.name : productId} (còn lại: ${remaining})`,
         });
       }
     }
@@ -154,11 +122,11 @@ const addDetail = asyncHandler(async (req, res) => {
   if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
 
   if (order.type === "xuat") {
-    const { canExport } = await stockFor(order.customer, product);
-    if (Number(quantity) > canExport) {
+    const { remaining } = await stockFor(order.customer, product);
+    if (Number(quantity) > remaining) {
       const productDoc = await Product.findById(product);
       return res.status(400).json({
-        message: `Mẫu hàng ${productDoc ? productDoc.name : product}: chỉ xuất được tối đa ${canExport} (số thành phẩm đã hoàn thành đủ các công đoạn, trừ đã xuất)`,
+        message: `Xuất vượt quá tồn kho mẫu hàng ${productDoc ? productDoc.name : product} (còn lại: ${remaining})`,
       });
     }
   }
@@ -180,13 +148,13 @@ const updateDetail = asyncHandler(async (req, res) => {
   if (quantity !== undefined) {
     const order = await Order.findById(req.params.id);
     if (order?.type === "xuat") {
-      const { canExport } = await stockFor(order.customer, existing.product);
+      const { remaining } = await stockFor(order.customer, existing.product);
       // cong lai so luong dong nay (da bi tinh vao "da xuat") truoc khi so sanh
-      const maxForThisLine = canExport + existing.quantity;
-      if (Number(quantity) > maxForThisLine) {
+      const remainingWithoutThisLine = remaining + existing.quantity;
+      if (Number(quantity) > remainingWithoutThisLine) {
         const productDoc = await Product.findById(existing.product);
         return res.status(400).json({
-          message: `Mẫu hàng ${productDoc ? productDoc.name : existing.product}: chỉ xuất được tối đa ${maxForThisLine} (số thành phẩm đã hoàn thành đủ các công đoạn)`,
+          message: `Xuất vượt quá tồn kho mẫu hàng ${productDoc ? productDoc.name : existing.product} (còn lại: ${remainingWithoutThisLine})`,
         });
       }
     }
@@ -253,31 +221,13 @@ const stockSummary = asyncHandler(async (req, res) => {
     },
   ]);
 
-  // Gop them cac mau hang cua khach chua co don Nhap/Xuat nao (van co the dang san xuat)
-  const allProducts = await Product.find({ customer, active: true }).select("_id name unit");
-  const byId = new Map();
-  rows.forEach((r) => byId.set(r.product._id.toString(), r));
-  allProducts.forEach((p) => {
-    const id = p._id.toString();
-    if (!byId.has(id)) byId.set(id, { product: { _id: p._id, name: p.name, unit: p.unit }, byType: [] });
-  });
-
-  const summary = await Promise.all(
-    [...byId.values()].map(async (r) => {
+  const summary = rows
+    .map((r) => {
       const imported = r.byType.find((t) => t.type === "nhap")?.total || 0;
       const exported = r.byType.find((t) => t.type === "xuat")?.total || 0;
-      const finished = await finishedQuantityFor(customer, r.product._id);
-      return {
-        product: r.product,
-        imported, // vai/phoi khach giao
-        exported, // thanh pham da ban giao
-        finished, // thanh pham hoan chinh = min san luong cac cong doan
-        canExport: Math.max(0, finished - exported), // con co the ban giao
-        remaining: imported - exported,
-      };
+      return { product: r.product, imported, exported, remaining: imported - exported };
     })
-  );
-  summary.sort((a, b) => a.product.name.localeCompare(b.product.name));
+    .sort((a, b) => a.product.name.localeCompare(b.product.name));
 
   res.json({ customer, rows: summary });
 });

@@ -105,7 +105,7 @@ class _ManageScreenState extends State<ManageScreen> {
           _MenuTile(
             icon: Iconsax.chart_2,
             title: 'Tồn kho',
-            subtitle: 'Vải đã nhận, thành phẩm hoàn thành, đã giao, còn giao được',
+            subtitle: 'Đã nhập, đã xuất, còn lại theo từng khách hàng',
             onTap: () => Navigator.of(context).push(slideRoute(const StockScreen())),
           ),
           _MenuTile(

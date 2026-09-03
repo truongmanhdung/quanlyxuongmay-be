@@ -68,10 +68,8 @@ export interface Order {
 }
 
 export interface StockInfo {
-  imported: number; // vai/phoi khach giao
-  exported: number; // thanh pham da ban giao
-  finished: number; // thanh pham hoan chinh = min san luong cac cong doan
-  canExport: number; // con co the ban giao cho khach
+  imported: number;
+  exported: number;
   remaining: number;
 }
 
