@@ -334,6 +334,11 @@ function CreateOrderModal({
       setError("Vui lòng chọn khách hàng");
       return;
     }
+    const validRows = rows.filter((r) => r.product && Number(r.quantity) > 0);
+    if (validRows.length === 0) {
+      setError("Thêm ít nhất 1 mặt hàng với số lượng lớn hơn 0");
+      return;
+    }
     if (type === "xuat") {
       const requestedByProduct = new Map<string, number>();
       rows.forEach((r) => {
@@ -356,7 +361,7 @@ function CreateOrderModal({
         customer,
         date,
         note,
-        details: rows.map((r) => ({
+        details: validRows.map((r) => ({
           product: r.product,
           quantity: Number(r.quantity),
         })),

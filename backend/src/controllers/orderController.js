@@ -55,13 +55,20 @@ async function unitPriceOf(productId) {
 // POST { type, customer, date, note, details: [{ product, quantity }] }
 // Ma phieu tu sinh: Nhap -> PN0001, Xuat -> PX0001
 const create = asyncHandler(async (req, res) => {
-  const { type, customer, date, note, details } = req.body;
+  const { type, customer, date, note } = req.body;
   if (!customer) return res.status(400).json({ message: "Thiếu khách hàng" });
   if (!["nhap", "xuat"].includes(type)) {
     return res.status(400).json({ message: "Thiếu loại đơn hoặc loại đơn không hợp lệ" });
   }
 
-  if (type === "xuat" && Array.isArray(details) && details.length > 0) {
+  const details = (Array.isArray(req.body.details) ? req.body.details : []).filter(
+    (d) => d?.product && Number(d.quantity) > 0
+  );
+  if (details.length === 0) {
+    return res.status(400).json({ message: "Phiếu cần ít nhất 1 mặt hàng với số lượng lớn hơn 0" });
+  }
+
+  if (type === "xuat") {
     const requestedByProduct = new Map();
     details.forEach((d) => {
       requestedByProduct.set(d.product, (requestedByProduct.get(d.product) || 0) + Number(d.quantity || 0));
@@ -86,19 +93,16 @@ const create = asyncHandler(async (req, res) => {
     createdBy: req.auth.sub,
   }));
 
-  let createdDetails = [];
-  if (Array.isArray(details) && details.length > 0) {
-    createdDetails = await OrderDetail.insertMany(
-      await Promise.all(
-        details.map(async (d) => ({
-          order: order._id,
-          product: d.product,
-          quantity: d.quantity,
-          unitPrice: await unitPriceOf(d.product),
-        }))
-      )
-    );
-  }
+  const createdDetails = await OrderDetail.insertMany(
+    await Promise.all(
+      details.map(async (d) => ({
+        order: order._id,
+        product: d.product,
+        quantity: d.quantity,
+        unitPrice: await unitPriceOf(d.product),
+      }))
+    )
+  );
   res.status(201).json({ ...order.toObject(), details: createdDetails });
 });
 

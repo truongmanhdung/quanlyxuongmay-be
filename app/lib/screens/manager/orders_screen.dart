@@ -137,20 +137,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
               ElevatedButton(
                 onPressed: () async {
+                  final qty = double.tryParse(qtyCtrl.text.trim()) ?? 0;
+                  if (selectedProduct == null || qty <= 0) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Chọn mẫu hàng và nhập số lượng lớn hơn 0')),
+                    );
+                    return;
+                  }
                   final api = ctx.read<ApiClient>();
                   try {
                     await OrderService(api).create(
                       type: type,
                       customer: selectedCustomer.id,
                       date: DateTime.now(),
-                      details: selectedProduct != null && qtyCtrl.text.trim().isNotEmpty
-                          ? [
-                              {
-                                'product': selectedProduct!.id,
-                                'quantity': double.tryParse(qtyCtrl.text) ?? 0,
-                              }
-                            ]
-                          : [],
+                      details: [
+                        {'product': selectedProduct!.id, 'quantity': qty},
+                      ],
                     );
                     if (ctx.mounted) Navigator.pop(ctx, true);
                   } catch (e) {
