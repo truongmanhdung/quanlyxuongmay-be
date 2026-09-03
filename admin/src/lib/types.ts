@@ -144,6 +144,39 @@ export interface PayrollDefectComparison {
   totals: { declaredAmount: number; estimatedDefectAmount: number; netAmount: number };
 }
 
+// ---- Doanh thu khach hang (tinh giong phieu luong): lo hoan thanh x don gia chuan mau hang ----
+export interface RevenueRow {
+  customer: { _id: string; code: string; name: string } | null;
+  batchCount: number;
+  totalQuantity: number;
+  totalAmount: number;
+}
+
+export interface RevenueSummary {
+  from: string;
+  to: string;
+  rows: RevenueRow[];
+}
+
+export interface RevenueBatchLine {
+  batch: string;
+  code: string;
+  productName: string;
+  completedAt: string | null;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+}
+
+export interface RevenueDetail {
+  from: string;
+  to: string;
+  customer: { _id: string; code: string; name: string } | null;
+  totalQuantity: number;
+  totalAmount: number;
+  lines: RevenueBatchLine[];
+}
+
 export interface Batch {
   _id: string;
   code: string;

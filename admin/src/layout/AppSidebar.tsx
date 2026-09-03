@@ -18,6 +18,7 @@ import {
   AlertIcon,
   TimeIcon,
   CalenderIcon,
+  PieChartIcon,
 } from "../icons/index";
 
 type NavItem = {
@@ -72,6 +73,11 @@ const navItems: NavItem[] = [
     icon: <DollarLineIcon />,
     name: "Tính lương",
     path: "/payroll",
+  },
+  {
+    icon: <PieChartIcon />,
+    name: "Doanh thu khách hàng",
+    path: "/revenue",
   },
   {
     icon: <BellIcon />,

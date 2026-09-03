@@ -12,6 +12,7 @@ import 'customers_screen.dart';
 import 'defects_screen.dart';
 import 'orders_screen.dart';
 import 'products_screen.dart';
+import 'revenue_screen.dart';
 import 'stock_screen.dart';
 import 'workers_screen.dart';
 
@@ -119,6 +120,12 @@ class _ManageScreenState extends State<ManageScreen> {
             title: 'Hàng lỗi / Hoàn trả',
             subtitle: 'Thống kê hàng hỏng, khách trả lại',
             onTap: () => Navigator.of(context).push(slideRoute(const DefectsScreen())),
+          ),
+          _MenuTile(
+            icon: Iconsax.chart_success,
+            title: 'Doanh thu khách hàng',
+            subtitle: 'Doanh thu theo kỳ từ các lô hàng đã hoàn thành',
+            onTap: () => Navigator.of(context).push(slideRoute(const RevenueScreen())),
           ),
           _MenuTile(
             icon: Iconsax.lock,
