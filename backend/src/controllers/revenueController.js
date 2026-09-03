@@ -28,6 +28,19 @@ async function exportLines(range, customerId) {
     { $match: match },
     { $lookup: { from: "products", localField: "product", foreignField: "_id", as: "product" } },
     { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } },
+    // Cac cong doan cua mau hang nay + don gia gia cong (de doi chieu voi don gia ban)
+    {
+      $lookup: {
+        from: "processstages",
+        let: { pid: "$product._id" },
+        pipeline: [
+          { $match: { $expr: { $and: [{ $eq: ["$product", "$$pid"] }, { $ne: ["$active", false] }] } } },
+          { $sort: { name: 1 } },
+          { $project: { _id: 0, name: 1, unitPrice: 1 } },
+        ],
+        as: "stages",
+      },
+    },
     { $sort: { "order.date": 1, "order.code": 1 } },
     {
       $project: {
@@ -40,20 +53,28 @@ async function exportLines(range, customerId) {
         quantity: "$quantity",
         unitPrice: "$unitPrice",
         amount: { $multiply: ["$quantity", { $ifNull: ["$unitPrice", 0] }] },
+        stages: "$stages",
+        stageCost: { $sum: "$stages.unitPrice" },
       },
     },
   ]);
 }
 
 function toLineDto(l) {
+  const unitPrice = l.unitPrice || 0;
+  const stageCost = l.stageCost || 0;
+  const stages = (l.stages || []).map((s) => ({ name: s.name, unitPrice: s.unitPrice || 0 }));
   return {
     order: l.order,
     orderCode: l.orderCode,
     date: l.date,
     productName: l.productName,
     quantity: l.quantity,
-    unitPrice: l.unitPrice || 0,
+    unitPrice,
     amount: Math.round(l.amount || 0),
+    stages,
+    stageCost, // tong don gia gia cong 1 sp (chi phi cong doan)
+    grossMargin: unitPrice - stageCost, // lai gop 1 sp = don gia ban - chi phi cong doan
   };
 }
 
@@ -191,24 +212,40 @@ const exportFile = asyncHandler(async (req, res) => {
   const fileName = `doanh-thu-${slip.customer ? slip.customer.code : "khach"}-${periodFileSuffix(slip)}`;
   const lines = [...slip.lines].sort((a, b) => new Date(a.date) - new Date(b.date));
 
+  const stageLabel = (l) =>
+    (l.stages || []).map((s) => `${s.name} (${formatCurrency(s.unitPrice)})`).join(", ") || "—";
+
   if (format === "xlsx") {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Doanh thu");
     sheet.columns = [
-      { key: "c1", width: 14 },
-      { key: "c2", width: 16 },
-      { key: "c3", width: 28 },
-      { key: "c4", width: 12 },
-      { key: "c5", width: 14 },
-      { key: "c6", width: 18 },
+      { key: "c1", width: 13 },
+      { key: "c2", width: 14 },
+      { key: "c3", width: 22 },
+      { key: "c4", width: 34 },
+      { key: "c5", width: 10 },
+      { key: "c6", width: 13 },
+      { key: "c7", width: 13 },
+      { key: "c8", width: 13 },
+      { key: "c9", width: 16 },
     ];
 
     sheet.addRow([`Doanh thu - ${customerName} - Kỳ ${formatPeriodLabel(slip)}`]);
-    sheet.mergeCells("A1:F1");
+    sheet.mergeCells("A1:I1");
     sheet.getRow(1).font = { bold: true, size: 13 };
     sheet.addRow([]);
 
-    const headerRow = sheet.addRow(["Ngày xuất", "Phiếu xuất", "Mẫu hàng", "Số lượng", "Đơn giá", "Thành tiền"]);
+    const headerRow = sheet.addRow([
+      "Ngày xuất",
+      "Phiếu xuất",
+      "Mẫu hàng",
+      "Công đoạn (đơn giá gia công)",
+      "Số lượng",
+      "Đơn giá bán",
+      "Chi phí công đoạn/sp",
+      "Lãi gộp/sp",
+      "Thành tiền",
+    ]);
     headerRow.font = { bold: true };
 
     lines.forEach((l) => {
@@ -216,14 +253,17 @@ const exportFile = asyncHandler(async (req, res) => {
         l.date ? new Date(l.date).toLocaleDateString("vi-VN") : "",
         l.orderCode || "",
         l.productName || "",
+        stageLabel(l),
         l.quantity,
         l.unitPrice,
+        l.stageCost || 0,
+        (l.unitPrice || 0) - (l.stageCost || 0),
         l.amount,
       ]);
     });
 
     sheet.addRow([]);
-    const totalRow = sheet.addRow(["", "", "TỔNG CỘNG", slip.totalQuantity, "", slip.totalAmount]);
+    const totalRow = sheet.addRow(["", "", "", "TỔNG CỘNG", slip.totalQuantity, "", "", "", slip.totalAmount]);
     totalRow.font = { bold: true, size: 12 };
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -265,10 +305,10 @@ const exportFile = asyncHandler(async (req, res) => {
   }
 
   lines.forEach((l) => {
-    ensureSpace(28);
+    ensureSpace(48);
     const dateLabel = l.date ? new Date(l.date).toLocaleDateString("vi-VN") : "—";
     doc
-      .font("VN")
+      .font("VN-Bold")
       .fontSize(10)
       .text(`•  ${l.productName} — Phiếu ${l.orderCode || "—"} — ${dateLabel}`, startX + 10, y, {
         width: contentWidth - 10,
@@ -278,11 +318,30 @@ const exportFile = asyncHandler(async (req, res) => {
       .font("VN")
       .fontSize(9.5)
       .text(
-        `SL ${formatNumber(l.quantity)} × ${formatCurrency(l.unitPrice)} = ${formatCurrency(l.amount)}`,
+        `SL ${formatNumber(l.quantity)} × đơn giá bán ${formatCurrency(l.unitPrice)} = ${formatCurrency(l.amount)}`,
         startX + 22,
         y,
         { width: contentWidth - 22 }
       );
+    y = doc.y + 2;
+    doc
+      .font("VN")
+      .fontSize(9)
+      .fillColor("#555555")
+      .text(`Công đoạn: ${stageLabel(l)}`, startX + 22, y, { width: contentWidth - 22 });
+    y = doc.y + 2;
+    doc
+      .font("VN")
+      .fontSize(9)
+      .text(
+        `Chi phí công đoạn ${formatCurrency(l.stageCost || 0)}/sp · Lãi gộp ${formatCurrency(
+          (l.unitPrice || 0) - (l.stageCost || 0)
+        )}/sp`,
+        startX + 22,
+        y,
+        { width: contentWidth - 22 }
+      );
+    doc.fillColor("black");
     y = doc.y + 8;
   });
 

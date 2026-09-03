@@ -164,6 +164,9 @@ export interface RevenueExportLine {
   quantity: number;
   unitPrice: number;
   amount: number;
+  stages: { name: string; unitPrice: number }[];
+  stageCost: number; // tong don gia gia cong 1 sp
+  grossMargin: number; // don gia ban - chi phi cong doan
 }
 
 export interface RevenueDetail {

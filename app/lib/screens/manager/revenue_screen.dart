@@ -398,13 +398,43 @@ class _ExportLineTile extends StatelessWidget {
               '${line.date != null ? ' · ${formatDate(line.date!)}' : ''}',
               style: const TextStyle(color: AppColors.gray500, fontSize: 12),
             ),
-            const SizedBox(height: 2),
-            Text(
-              '${formatNumber(line.quantity)} × ${formatCurrency(line.unitPrice)}',
-              style: const TextStyle(color: AppColors.gray500, fontSize: 12),
+            const SizedBox(height: 6),
+            _kv('Số lượng', formatNumber(line.quantity)),
+            _kv('Đơn giá bán', formatCurrency(line.unitPrice)),
+            _kv('Chi phí công đoạn', '${formatCurrency(line.stageCost)}/sp'),
+            _kv(
+              'Lãi gộp',
+              '${formatCurrency(line.grossMargin)}/sp',
+              valueColor: line.grossMargin < 0 ? AppColors.error500 : AppColors.success500,
             ),
+            if (line.stages.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Công đoạn: ${line.stages.map((s) => '${s.name} (${formatCurrency(s.unitPrice)})').join(' · ')}',
+                style: const TextStyle(color: AppColors.gray400, fontSize: 11.5),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _kv(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        children: [
+          Text('$label: ', style: const TextStyle(color: AppColors.gray500, fontSize: 12)),
+          Text(
+            value,
+            style: TextStyle(
+              color: valueColor ?? AppColors.gray700,
+              fontSize: 12,
+              fontWeight: valueColor != null ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

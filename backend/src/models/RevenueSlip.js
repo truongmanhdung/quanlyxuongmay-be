@@ -12,6 +12,12 @@ const revenueLineSchema = new mongoose.Schema(
     quantity: { type: Number, default: 0 },
     unitPrice: { type: Number, default: 0 }, // don gia khach tra tren dong phieu xuat
     amount: { type: Number, default: 0 }, // quantity * unitPrice
+    stages: {
+      type: [{ _id: false, name: String, unitPrice: Number }],
+      default: [],
+    }, // cong doan cua mau hang + don gia gia cong tai thoi diem chot
+    stageCost: { type: Number, default: 0 }, // tong don gia gia cong 1 sp
+    grossMargin: { type: Number, default: 0 }, // lai gop 1 sp = unitPrice - stageCost
   },
   { _id: false }
 );

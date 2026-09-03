@@ -195,18 +195,33 @@ export default function RevenuePage() {
                       <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
                         <div className="divide-y divide-gray-100 dark:divide-gray-800">
                           {detail.lines.map((l, i) => (
-                            <div key={`${l.order}-${l.productName}-${i}`} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
-                              <div className="text-gray-700 dark:text-gray-300">
-                                <span className="font-medium">{l.productName}</span>
-                                <span className="text-gray-400"> · Phiếu {l.orderCode}</span>
-                                {l.date && <span className="text-gray-400"> · {formatDate(l.date)}</span>}
-                              </div>
-                              <div className="whitespace-nowrap text-gray-500 dark:text-gray-400">
-                                {formatNumber(l.quantity)} × {formatCurrency(l.unitPrice)} ={" "}
-                                <span className="font-medium text-gray-800 dark:text-white/90">
+                            <div key={`${l.order}-${l.productName}-${i}`} className="px-4 py-3 text-sm">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="text-gray-800 dark:text-white/90">
+                                  <span className="font-semibold">{l.productName}</span>
+                                  <span className="text-gray-400 font-normal"> · Phiếu {l.orderCode}</span>
+                                  {l.date && <span className="text-gray-400 font-normal"> · {formatDate(l.date)}</span>}
+                                </div>
+                                <span className="whitespace-nowrap font-semibold text-gray-800 dark:text-white/90">
                                   {formatCurrency(l.amount)}
                                 </span>
                               </div>
+                              <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400 sm:grid-cols-4">
+                                <span>Số lượng: <span className="text-gray-700 dark:text-gray-300">{formatNumber(l.quantity)}</span></span>
+                                <span>Đơn giá bán: <span className="text-gray-700 dark:text-gray-300">{formatCurrency(l.unitPrice)}</span></span>
+                                <span>Chi phí công đoạn: <span className="text-gray-700 dark:text-gray-300">{formatCurrency(l.stageCost)}/sp</span></span>
+                                <span>
+                                  Lãi gộp:{" "}
+                                  <span className={l.grossMargin < 0 ? "text-error-500 font-medium" : "text-success-500 font-medium"}>
+                                    {formatCurrency(l.grossMargin)}/sp
+                                  </span>
+                                </span>
+                              </div>
+                              {l.stages.length > 0 && (
+                                <div className="mt-1 text-xs text-gray-400">
+                                  Công đoạn: {l.stages.map((s) => `${s.name} (${formatCurrency(s.unitPrice)})`).join(" · ")}
+                                </div>
+                              )}
                             </div>
                           ))}
                           <div className="flex items-center justify-between gap-3 bg-gray-50 px-4 py-2.5 text-sm dark:bg-white/[0.04]">
