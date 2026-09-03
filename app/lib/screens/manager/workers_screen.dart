@@ -235,7 +235,7 @@ class _WorkersScreenState extends State<WorkersScreen> {
                                   onPressed: () => _showFormSheet(editing: w),
                                 ),
                                 RowIconButton(
-                                  icon: w.active ? Icons.block_outlined : Icons.check_circle_outline,
+                                  icon: w.active ? Icons.lock_outline : Icons.lock_open_outlined,
                                   color: w.active ? AppColors.error500 : AppColors.success500,
                                   onPressed: () => _toggleActive(w),
                                 ),

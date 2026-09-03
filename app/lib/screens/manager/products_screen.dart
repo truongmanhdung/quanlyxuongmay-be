@@ -314,7 +314,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   onPressed: () => _showEditDialog(p),
                                 ),
                                 RowIconButton(
-                                  icon: p.active ? Icons.block_outlined : Icons.check_circle_outline,
+                                  icon: p.active ? Icons.lock_outline : Icons.lock_open_outlined,
                                   color: p.active ? AppColors.error500 : AppColors.success500,
                                   onPressed: () => _toggleActive(p),
                                 ),
@@ -622,7 +622,7 @@ class _StagesScreenState extends State<_StagesScreen> {
                                       onPressed: () => _showEditDialog(s),
                                     ),
                                     RowIconButton(
-                                      icon: s.active ? Icons.block_outlined : Icons.check_circle_outline,
+                                      icon: s.active ? Icons.lock_outline : Icons.lock_open_outlined,
                                       color: s.active ? AppColors.error500 : AppColors.success500,
                                       onPressed: () => _toggleActive(s),
                                     ),

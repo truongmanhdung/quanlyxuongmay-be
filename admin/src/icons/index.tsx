@@ -29,6 +29,7 @@ import ChevronDownIcon from "./chevron-down.svg";
 import ChevronUpIcon from "./chevron-up.svg";
 import PaperPlaneIcon from "./paper-plane.svg";
 import LockIcon from "./lock.svg";
+import UnlockIcon from "./unlock.svg";
 import EnvelopeIcon from "./envelope.svg";
 import UserIcon from "./user-line.svg";
 import CalenderIcon from "./calender-line.svg";
@@ -86,6 +87,7 @@ export {
   PaperPlaneIcon,
   EnvelopeIcon,
   LockIcon,
+  UnlockIcon,
   UserIcon,
   CalenderIcon,
   EyeIcon,

@@ -9,7 +9,7 @@ import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
 import DateRangeFilter from "@/components/common/DateRangeFilter";
-import { PlusIcon, TrashBinIcon, CheckCircleIcon } from "@/icons";
+import { PlusIcon, LockIcon, UnlockIcon } from "@/icons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { defectsApi } from "@/lib/resources/defects";
 import { productsApi } from "@/lib/resources/products";
@@ -298,7 +298,7 @@ export default function DefectsPage() {
                                     : "text-gray-500 hover:text-success-500 dark:text-gray-400"
                                 }
                               >
-                                {d.active ? <TrashBinIcon /> : <CheckCircleIcon />}
+                                {d.active ? <LockIcon /> : <UnlockIcon />}
                               </button>
                             </TableCell>
                           </TableRow>

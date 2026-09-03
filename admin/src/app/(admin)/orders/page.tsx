@@ -8,7 +8,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
-import { PlusIcon, TrashBinIcon, EyeIcon, CheckCircleIcon } from "@/icons";
+import { PlusIcon, TrashBinIcon, EyeIcon, LockIcon, UnlockIcon } from "@/icons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { ordersApi } from "@/lib/resources/orders";
 import { customersApi } from "@/lib/resources/customers";
@@ -173,7 +173,7 @@ export default function OrdersPage() {
                                       : "text-gray-500 hover:text-success-500 dark:text-gray-400"
                                   }
                                 >
-                                  {o.active ? <TrashBinIcon /> : <CheckCircleIcon />}
+                                  {o.active ? <LockIcon /> : <UnlockIcon />}
                                 </button>
                               </div>
                             </TableCell>

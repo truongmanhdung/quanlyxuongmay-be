@@ -188,7 +188,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                                   onPressed: () => _showFormSheet(editing: c),
                                 ),
                                 RowIconButton(
-                                  icon: c.active ? Icons.block_outlined : Icons.check_circle_outline,
+                                  icon: c.active ? Icons.lock_outline : Icons.lock_open_outlined,
                                   color: c.active ? AppColors.error500 : AppColors.success500,
                                   onPressed: () => _toggleActive(c),
                                 ),

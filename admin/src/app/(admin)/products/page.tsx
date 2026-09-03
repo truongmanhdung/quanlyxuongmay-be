@@ -7,7 +7,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
-import { PencilIcon, TrashBinIcon, PlusIcon, ListIcon, CheckCircleIcon } from "@/icons";
+import { PencilIcon, TrashBinIcon, PlusIcon, ListIcon, LockIcon, UnlockIcon } from "@/icons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { productsApi } from "@/lib/resources/products";
 import { customersApi } from "@/lib/resources/customers";
@@ -312,7 +312,7 @@ export default function ProductsPage() {
                           : "text-gray-500 hover:text-success-500 dark:text-gray-400"
                       }
                     >
-                      {p.active ? <TrashBinIcon /> : <CheckCircleIcon />}
+                      {p.active ? <LockIcon /> : <UnlockIcon />}
                     </button>
                   </div>
                 ),
@@ -605,7 +605,7 @@ function StageManagerModal({ product, onClose }: { product: Product; onClose: ()
                         : "text-gray-500 hover:text-success-500 dark:text-gray-400"
                     }
                   >
-                    {s.active ? <TrashBinIcon /> : <CheckCircleIcon />}
+                    {s.active ? <LockIcon /> : <UnlockIcon />}
                   </button>
                 </div>
               </div>

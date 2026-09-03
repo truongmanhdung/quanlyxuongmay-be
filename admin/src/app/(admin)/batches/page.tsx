@@ -8,7 +8,7 @@ import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import Badge from "@/components/ui/badge/Badge";
-import { PencilIcon, TrashBinIcon, PlusIcon, CheckCircleIcon } from "@/icons";
+import { PencilIcon, PlusIcon, CheckCircleIcon, LockIcon, UnlockIcon } from "@/icons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogProvider";
 import { batchesApi } from "@/lib/resources/batches";
 import { productsApi } from "@/lib/resources/products";
@@ -293,7 +293,7 @@ export default function BatchesPage() {
                               : "text-gray-500 hover:text-success-500 dark:text-gray-400"
                           }
                         >
-                          {b.active ? <TrashBinIcon /> : <CheckCircleIcon />}
+                          {b.active ? <LockIcon /> : <UnlockIcon />}
                         </button>
                       </div>
                     </TableCell>
