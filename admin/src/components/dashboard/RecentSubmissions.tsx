@@ -66,7 +66,6 @@ export default function RecentSubmissions({ reports }: { reports: ProductionRepo
                 </TableCell>
                 <TableCell className="py-3 text-gray-600 text-theme-sm dark:text-gray-300">
                   {r.product?.name ?? "(mẫu hàng đã xoá)"} — {r.processStage?.name ?? "(công đoạn đã xoá)"}
-                  {r.batchNumber ? <span className="text-gray-400"> (Lô {r.batchNumber})</span> : null}
                 </TableCell>
                 <TableCell className="py-3 text-gray-600 text-theme-sm dark:text-gray-300">
                   {formatNumber(r.quantity)}

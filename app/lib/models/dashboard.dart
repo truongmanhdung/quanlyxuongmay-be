@@ -19,7 +19,7 @@ class DashboardOverview {
   final String to;
   final double totalAmount;
   final double totalQuantity;
-  final int batchCount;
+  final int reportCount;
   final int activeWorkerCount;
   final int workersWithSubmissions;
   final int activeCustomers;
@@ -32,7 +32,7 @@ class DashboardOverview {
     required this.to,
     required this.totalAmount,
     required this.totalQuantity,
-    required this.batchCount,
+    required this.reportCount,
     required this.activeWorkerCount,
     required this.workersWithSubmissions,
     required this.activeCustomers,
@@ -46,7 +46,7 @@ class DashboardOverview {
         to: json['to'] as String,
         totalAmount: (json['totalAmount'] as num).toDouble(),
         totalQuantity: (json['totalQuantity'] as num).toDouble(),
-        batchCount: json['batchCount'] as int? ?? 0,
+        reportCount: json['reportCount'] as int? ?? 0,
         // Backend dat ten nguoc: activeWorkerCount = so cong nhan da gui bao cao (tu so),
         // totalWorkerCount = tong so cong nhan dang hoat dong (mau so).
         activeWorkerCount: json['totalWorkerCount'] as int? ?? 0,

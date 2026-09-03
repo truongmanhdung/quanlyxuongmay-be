@@ -14,7 +14,6 @@ import {
   HorizontaLDots,
   BellIcon,
   UserCircleIcon,
-  ListIcon,
   AlertIcon,
   TimeIcon,
   CalenderIcon,
@@ -58,11 +57,6 @@ const navItems: NavItem[] = [
     icon: <BoxIconLine />,
     name: "Nhập / Xuất",
     path: "/orders",
-  },
-  {
-    icon: <ListIcon />,
-    name: "Lô hàng",
-    path: "/batches",
   },
   {
     icon: <AlertIcon />,

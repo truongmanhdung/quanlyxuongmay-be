@@ -2,20 +2,20 @@ import 'customer.dart';
 
 class RevenueRow {
   final CustomerRef? customer;
-  final int batchCount;
+  final int orderCount;
   final double totalQuantity;
   final double totalAmount;
 
   RevenueRow({
     required this.customer,
-    required this.batchCount,
+    required this.orderCount,
     required this.totalQuantity,
     required this.totalAmount,
   });
 
   factory RevenueRow.fromJson(Map<String, dynamic> json) => RevenueRow(
         customer: json['customer'] != null ? CustomerRef.fromJson(json['customer'] as Map<String, dynamic>) : null,
-        batchCount: json['batchCount'] as int? ?? 0,
+        orderCount: json['orderCount'] as int? ?? 0,
         totalQuantity: (json['totalQuantity'] as num?)?.toDouble() ?? 0,
         totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
       );
@@ -35,30 +35,30 @@ class RevenueSummary {
       );
 }
 
-class RevenueBatchLine {
-  final String batchId;
-  final String code;
+class RevenueExportLine {
+  final String orderId;
+  final String orderCode;
+  final DateTime? date;
   final String productName;
-  final DateTime? completedAt;
   final double quantity;
   final double unitPrice;
   final double amount;
 
-  RevenueBatchLine({
-    required this.batchId,
-    required this.code,
+  RevenueExportLine({
+    required this.orderId,
+    required this.orderCode,
+    required this.date,
     required this.productName,
-    required this.completedAt,
     required this.quantity,
     required this.unitPrice,
     required this.amount,
   });
 
-  factory RevenueBatchLine.fromJson(Map<String, dynamic> json) => RevenueBatchLine(
-        batchId: json['batch'] as String? ?? '',
-        code: json['code'] as String? ?? '',
+  factory RevenueExportLine.fromJson(Map<String, dynamic> json) => RevenueExportLine(
+        orderId: json['order'] as String? ?? '',
+        orderCode: json['orderCode'] as String? ?? '',
+        date: json['date'] != null ? DateTime.parse(json['date'] as String) : null,
         productName: json['productName'] as String? ?? '',
-        completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt'] as String) : null,
         quantity: (json['quantity'] as num?)?.toDouble() ?? 0,
         unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0,
         amount: (json['amount'] as num?)?.toDouble() ?? 0,
@@ -71,7 +71,7 @@ class RevenueDetail {
   final CustomerRef? customer;
   final double totalQuantity;
   final double totalAmount;
-  final List<RevenueBatchLine> lines;
+  final List<RevenueExportLine> lines;
 
   RevenueDetail({
     required this.from,
@@ -89,7 +89,7 @@ class RevenueDetail {
         totalQuantity: (json['totalQuantity'] as num?)?.toDouble() ?? 0,
         totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
         lines: (json['lines'] as List<dynamic>? ?? [])
-            .map((e) => RevenueBatchLine.fromJson(e as Map<String, dynamic>))
+            .map((e) => RevenueExportLine.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 }
@@ -100,7 +100,7 @@ class RevenueSlip {
   final DateTime periodTo;
   final double totalQuantity;
   final double totalAmount;
-  final int batchCount;
+  final int orderCount;
   final DateTime issuedAt;
 
   RevenueSlip({
@@ -109,7 +109,7 @@ class RevenueSlip {
     required this.periodTo,
     required this.totalQuantity,
     required this.totalAmount,
-    required this.batchCount,
+    required this.orderCount,
     required this.issuedAt,
   });
 
@@ -119,7 +119,7 @@ class RevenueSlip {
         periodTo: DateTime.parse(json['periodTo'] as String),
         totalQuantity: (json['totalQuantity'] as num?)?.toDouble() ?? 0,
         totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
-        batchCount: json['batchCount'] as int? ?? 0,
+        orderCount: json['orderCount'] as int? ?? 0,
         issuedAt: DateTime.parse(json['issuedAt'] as String),
       );
 }

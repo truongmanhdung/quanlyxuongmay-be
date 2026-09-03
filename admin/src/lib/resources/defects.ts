@@ -2,17 +2,15 @@ import { api } from "@/lib/api";
 import { DefectComparison, DefectReport, DefectSummary, Worker } from "@/lib/types";
 
 export const defectsApi = {
-  list: (params?: { product?: string; customer?: string; batch?: string; type?: string }) => {
+  list: (params?: { product?: string; customer?: string; type?: string }) => {
     const qs = new URLSearchParams();
     if (params?.product) qs.set("product", params.product);
     if (params?.customer) qs.set("customer", params.customer);
-    if (params?.batch) qs.set("batch", params.batch);
     if (params?.type) qs.set("type", params.type);
     const suffix = qs.toString() ? `?${qs.toString()}` : "";
     return api.get<DefectReport[]>(`/defects${suffix}`);
   },
   create: (data: {
-    batch?: string;
     product: string;
     customer: string;
     processStage?: string;

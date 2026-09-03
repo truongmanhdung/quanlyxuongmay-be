@@ -13,7 +13,6 @@ import '../../services/dashboard_service.dart';
 import '../../widgets/date_range_filter.dart';
 import '../../widgets/report_tile.dart';
 import '../../widgets/stat_card.dart';
-import 'batches_screen.dart';
 import 'workers_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -40,14 +39,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _load();
     _socket = context.read<SocketService>();
     _socket.on('report:new', _handleRealtimeEvent);
-    _socket.on('batch:updated', _handleRealtimeEvent);
     _socket.on('defect:new', _handleRealtimeEvent);
   }
 
   @override
   void dispose() {
     _socket.off('report:new', _handleRealtimeEvent);
-    _socket.off('batch:updated', _handleRealtimeEvent);
     _socket.off('defect:new', _handleRealtimeEvent);
     super.dispose();
   }
@@ -116,15 +113,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           StatCard(
                             icon: Iconsax.box,
-                            label: 'Tổng sản lượng',
+                            label: 'Tổng sản lượng đã duyệt',
                             value: '${formatNumber(data!.totalQuantity)} sp',
                             onTap: () => widget.onNavigateTab?.call(1),
                           ),
                           StatCard(
-                            icon: Iconsax.truck_fast,
-                            label: 'Số lô hoàn thành',
-                            value: formatNumber(data!.batchCount),
-                            onTap: () => Navigator.of(context).push(slideRoute(const BatchesScreen())),
+                            icon: Iconsax.task_square,
+                            label: 'Lượt báo cáo đã duyệt',
+                            value: formatNumber(data!.reportCount),
+                            onTap: () => widget.onNavigateTab?.call(1),
                           ),
                           StatCard(
                             icon: Iconsax.people,

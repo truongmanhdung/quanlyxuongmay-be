@@ -45,7 +45,6 @@ class ReportTile extends StatelessWidget {
                 ),
               ),
             Text(
-              'Lô ${report.batchNumber?.isNotEmpty == true ? report.batchNumber : "—"} · '
               '${formatNumber(report.quantity)} × ${formatCurrency(report.unitPrice)}',
               style: TextStyle(fontSize: 12.5, color: AppColors.gray500),
             ),

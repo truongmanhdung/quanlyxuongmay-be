@@ -49,7 +49,6 @@ export interface OrderDetail {
   order: string;
   // co the null neu mau hang bi vo hieu hoa/xoa sau khi tao dong don hang
   product: { _id: string; name: string; unit?: string } | string | null;
-  batch?: { _id: string; code: string } | string | null;
   quantity: number;
   unitPrice: number;
   amount?: number;
@@ -91,7 +90,6 @@ export interface ProductionReport {
   // co the null neu mau hang / cong doan da bi xoa sau khi bao cao duoc gui
   product: { _id: string; name: string; unit?: string } | null;
   processStage: { _id: string; name: string; unitPrice: number } | null;
-  batchNumber?: string;
   quantity: number;
   unitPrice: number;
   amount: number;
@@ -144,10 +142,10 @@ export interface PayrollDefectComparison {
   totals: { declaredAmount: number; estimatedDefectAmount: number; netAmount: number };
 }
 
-// ---- Doanh thu khach hang (tinh giong phieu luong): lo hoan thanh x don gia chuan mau hang ----
+// ---- Doanh thu khach hang: tong cac dong phieu Xuat (tra hang thanh pham) trong ky ----
 export interface RevenueRow {
   customer: { _id: string; code: string; name: string } | null;
-  batchCount: number;
+  orderCount: number;
   totalQuantity: number;
   totalAmount: number;
 }
@@ -158,11 +156,11 @@ export interface RevenueSummary {
   rows: RevenueRow[];
 }
 
-export interface RevenueBatchLine {
-  batch: string;
-  code: string;
+export interface RevenueExportLine {
+  order: string;
+  orderCode: string;
+  date: string | null;
   productName: string;
-  completedAt: string | null;
   quantity: number;
   unitPrice: number;
   amount: number;
@@ -174,33 +172,11 @@ export interface RevenueDetail {
   customer: { _id: string; code: string; name: string } | null;
   totalQuantity: number;
   totalAmount: number;
-  lines: RevenueBatchLine[];
-}
-
-export interface Batch {
-  _id: string;
-  code: string;
-  // co the null neu mau hang bi xoa sau khi tao lo hang
-  product: { _id: string; name: string; unit?: string } | null;
-  // co the null neu khach hang bi xoa sau khi tao lo hang
-  customer: { _id: string; code: string; name: string } | null;
-  plannedQuantity?: number;
-  status: "dang_lam" | "chua_hoan_thanh" | "hoan_thanh";
-  note?: string;
-  active: boolean;
-  reportedQuantity: number;
-  exportedQuantity: number;
-  completedAt?: string;
-  createdAt: string;
-}
-
-export interface BatchDetail extends Batch {
-  reports: ProductionReport[];
+  lines: RevenueExportLine[];
 }
 
 export interface DefectReport {
   _id: string;
-  batch?: { _id: string; code: string };
   product: { _id: string; name: string } | null;
   // co the null neu khach hang bi xoa sau khi tao bao cao loi
   customer: { _id: string; code: string; name: string } | null;
@@ -296,7 +272,7 @@ export interface DashboardOverview {
   to: string;
   totalAmount: number;
   totalQuantity: number;
-  batchCount: number;
+  reportCount: number;
   totalWorkerCount: number;
   activeWorkerCount: number;
   activeCustomers: number;

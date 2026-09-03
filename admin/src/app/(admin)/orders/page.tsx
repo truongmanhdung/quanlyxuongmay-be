@@ -13,12 +13,11 @@ import { useConfirmDialog } from "@/components/ui/confirm-dialog/ConfirmDialogPr
 import { ordersApi } from "@/lib/resources/orders";
 import { customersApi } from "@/lib/resources/customers";
 import { productsApi } from "@/lib/resources/products";
-import { batchesApi } from "@/lib/resources/batches";
-import { Order, Customer, Product, StockSummaryRow, Batch } from "@/lib/types";
+import { Order, Customer, Product, StockSummaryRow } from "@/lib/types";
 import { ApiError } from "@/lib/api";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 
-type DetailRow = { product: string; productLabel: string; batch: string; quantity: string; unitPrice: string };
+type DetailRow = { product: string; productLabel: string; quantity: string; unitPrice: string };
 
 export default function OrdersPage() {
   const confirmDialog = useConfirmDialog();
@@ -83,7 +82,7 @@ export default function OrdersPage() {
       <div>
         <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Nhập / Xuất</h1>
         <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-          Phiếu nhập hàng và xuất hàng cho khách hàng
+          Nhập = khách giao vải / bán thành phẩm vào xưởng · Xuất = xưởng trả hàng thành phẩm cho khách. Tồn = số đang gia công dở.
         </p>
       </div>
 
@@ -290,7 +289,6 @@ function CreateOrderModal({
   const [products, setProducts] = useState<Product[]>([]);
   const [rows, setRows] = useState<DetailRow[]>([]);
   const [stockMap, setStockMap] = useState<Record<string, number>>({});
-  const [batchesByProduct, setBatchesByProduct] = useState<Record<string, Batch[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -317,21 +315,12 @@ function CreateOrderModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, customer, rows]);
 
-  function loadBatchesFor(productId: string) {
-    if (!productId || !customer || productId in batchesByProduct) return;
-    batchesApi
-      .list({ customer, product: productId, active: true })
-      .then((data) => setBatchesByProduct((prev) => ({ ...prev, [productId]: data })))
-      .catch(() => setBatchesByProduct((prev) => ({ ...prev, [productId]: [] })));
-  }
-
   function addRow() {
     if (products.length === 0) return;
     const p = products[0];
-    loadBatchesFor(p._id);
     setRows([
       ...rows,
-      { product: p._id, productLabel: p.name, batch: "", quantity: "1", unitPrice: String(p.standardPrice || 0) },
+      { product: p._id, productLabel: p.name, quantity: "1", unitPrice: String(p.standardPrice || 0) },
     ]);
   }
 
@@ -373,7 +362,6 @@ function CreateOrderModal({
         note,
         details: rows.map((r) => ({
           product: r.product,
-          batch: r.batch || undefined,
           quantity: Number(r.quantity),
           unitPrice: Number(r.unitPrice),
         })),
@@ -453,8 +441,7 @@ function CreateOrderModal({
                       value={r.product}
                       onChange={(e) => {
                         const p = products.find((pp) => pp._id === e.target.value);
-                        loadBatchesFor(e.target.value);
-                        updateRow(idx, { product: e.target.value, productLabel: p ? p.name : "", batch: "" });
+                        updateRow(idx, { product: e.target.value, productLabel: p ? p.name : "" });
                       }}
                     >
                       {products.map((p) => (
@@ -469,18 +456,6 @@ function CreateOrderModal({
                       </span>
                     )}
                   </div>
-                  <select
-                    className="h-10 w-36 rounded-lg border border-gray-300 bg-transparent px-3 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                    value={r.batch}
-                    onChange={(e) => updateRow(idx, { batch: e.target.value })}
-                  >
-                    <option value="">Lô hàng (tuỳ chọn)</option>
-                    {(batchesByProduct[r.product] || []).map((b) => (
-                      <option key={b._id} value={b._id}>
-                        {b.code}
-                      </option>
-                    ))}
-                  </select>
                   <Input type="number" className="!w-24" placeholder="SL" value={r.quantity} onChange={(e) => updateRow(idx, { quantity: e.target.value })} />
                   <Input type="number" className="!w-28" placeholder="Đơn giá" value={r.unitPrice} onChange={(e) => updateRow(idx, { unitPrice: e.target.value })} />
                   <button type="button" onClick={() => removeRow(idx)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
@@ -522,12 +497,10 @@ function ViewOrderModal({ order, onClose }: { order: Order; onClose: () => void 
           {details.length === 0 && <p className="text-sm text-gray-400">Chưa có chi tiết mặt hàng</p>}
           {details.map((d) => {
             const p = typeof d.product === "string" ? null : d.product;
-            const b = d.batch && typeof d.batch !== "string" ? d.batch : null;
             return (
               <div key={d._id} className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-2.5 text-sm dark:border-gray-800">
                 <span className="text-gray-700 dark:text-gray-300">
                   {p ? p.name : "—"}
-                  {b && <span className="ml-2 text-xs text-gray-400">· Lô {b.code}</span>}
                 </span>
                 <span className="text-gray-500 dark:text-gray-400">
                   {formatNumber(d.quantity)} × {formatCurrency(d.unitPrice)}

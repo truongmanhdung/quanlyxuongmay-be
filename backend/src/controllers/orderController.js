@@ -22,9 +22,7 @@ const list = asyncHandler(async (req, res) => {
 const getOne = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate("customer", "code name");
   if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-  const details = await OrderDetail.find({ order: order._id })
-    .populate("product", "name unit")
-    .populate("batch", "code");
+  const details = await OrderDetail.find({ order: order._id }).populate("product", "name unit");
   res.json({ ...order.toObject(), details });
 });
 
@@ -87,7 +85,6 @@ const create = asyncHandler(async (req, res) => {
       details.map((d) => ({
         order: order._id,
         product: d.product,
-        batch: d.batch || undefined,
         quantity: d.quantity,
         unitPrice: d.unitPrice || 0,
       }))
@@ -116,7 +113,7 @@ const remove = asyncHandler(async (req, res) => {
 // ---- Chi tiet don hang ----
 
 const addDetail = asyncHandler(async (req, res) => {
-  const { product, batch, quantity, unitPrice } = req.body;
+  const { product, quantity, unitPrice } = req.body;
   if (!product || quantity === undefined) {
     return res.status(400).json({ message: "Thiếu mã hàng hoặc số lượng" });
   }
@@ -136,7 +133,6 @@ const addDetail = asyncHandler(async (req, res) => {
   const detail = await OrderDetail.create({
     order: req.params.id,
     product,
-    batch: batch || undefined,
     quantity,
     unitPrice: unitPrice || 0,
   });
@@ -144,7 +140,7 @@ const addDetail = asyncHandler(async (req, res) => {
 });
 
 const updateDetail = asyncHandler(async (req, res) => {
-  const { quantity, unitPrice, batch } = req.body;
+  const { quantity, unitPrice } = req.body;
   const existing = await OrderDetail.findOne({ _id: req.params.detailId, order: req.params.id });
   if (!existing) return res.status(404).json({ message: "Không tìm thấy chi tiết đơn hàng" });
 
@@ -165,7 +161,7 @@ const updateDetail = asyncHandler(async (req, res) => {
 
   const detail = await OrderDetail.findOneAndUpdate(
     { _id: req.params.detailId, order: req.params.id },
-    { $set: { quantity, unitPrice, ...(batch !== undefined ? { batch: batch || null } : {}) } },
+    { $set: { quantity, unitPrice } },
     { new: true, runValidators: true }
   );
   res.json(detail);

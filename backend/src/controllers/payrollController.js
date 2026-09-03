@@ -346,13 +346,12 @@ const exportFile = asyncHandler(async (req, res) => {
       { key: "col1", width: 24 },
       { key: "col2", width: 22 },
       { key: "col3", width: 12 },
-      { key: "col4", width: 12 },
-      { key: "col5", width: 14 },
-      { key: "col6", width: 16 },
+      { key: "col4", width: 14 },
+      { key: "col5", width: 16 },
     ];
 
     sheet.addRow([`Phiếu lương - ${slip.worker.code} - ${slip.worker.name} - Kỳ ${formatPeriodLabel(slip)}`]);
-    sheet.mergeCells("A1:F1");
+    sheet.mergeCells("A1:E1");
     sheet.getRow(1).font = { bold: true, size: 13 };
     sheet.addRow([]);
 
@@ -362,29 +361,28 @@ const exportFile = asyncHandler(async (req, res) => {
       dayHeaderRow.eachCell((cell) => {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE9EBF3" } };
       });
-      sheet.mergeCells(`A${dayHeaderRow.number}:F${dayHeaderRow.number}`);
+      sheet.mergeCells(`A${dayHeaderRow.number}:E${dayHeaderRow.number}`);
 
-      const headerRow = sheet.addRow(["Công đoạn", "Mẫu hàng", "Số lô", "Số lượng", "Đơn giá", "Thành tiền"]);
+      const headerRow = sheet.addRow(["Công đoạn", "Mẫu hàng", "Số lượng", "Đơn giá", "Thành tiền"]);
       headerRow.font = { bold: true, italic: true, size: 10 };
 
       group.reports.forEach((r) => {
         sheet.addRow([
           r.processStage ? r.processStage.name : "",
           r.product ? r.product.name : "",
-          r.batchNumber || "",
           r.quantity,
           r.unitPrice,
           r.amount,
         ]);
       });
 
-      const subtotalRow = sheet.addRow(["", "", "", "", "Cộng ngày", group.subtotalAmount]);
+      const subtotalRow = sheet.addRow(["", "", "", "Cộng ngày", group.subtotalAmount]);
       subtotalRow.font = { bold: true };
       sheet.addRow([]);
     });
 
     sheet.addRow([]);
-    const totalRow = sheet.addRow(["", "", "", "TỔNG KẾT", slip.totalQuantity, slip.totalAmount]);
+    const totalRow = sheet.addRow(["", "", "TỔNG KẾT", slip.totalQuantity, slip.totalAmount]);
     totalRow.font = { bold: true, size: 12 };
 
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -427,9 +425,7 @@ const exportFile = asyncHandler(async (req, res) => {
 
     group.reports.forEach((r) => {
       ensureSpace(15);
-      const label = `${r.processStage ? r.processStage.name : "—"} — ${r.product ? r.product.name : "—"}${
-        r.batchNumber ? ` (Lô ${r.batchNumber})` : ""
-      }`;
+      const label = `${r.processStage ? r.processStage.name : "—"} — ${r.product ? r.product.name : "—"}`;
       const calc = `SL ${formatNumber(r.quantity)} × ${formatCurrency(r.unitPrice)} = ${formatCurrency(r.amount)}`;
       doc.font("VN").fontSize(9.5).text(`•  ${label}`, startX + 10, y, { width: contentWidth - 10 });
       y = doc.y + 2;

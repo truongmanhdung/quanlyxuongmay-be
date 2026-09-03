@@ -6,7 +6,6 @@ import '../../core/api_client.dart';
 import '../../core/page_transition.dart';
 import '../../core/theme.dart';
 import '../../services/notification_service.dart';
-import 'batches_screen.dart';
 import 'dashboard_screen.dart';
 import 'manage_screen.dart';
 import 'notifications_screen.dart';
@@ -88,14 +87,6 @@ class _ManagerShellState extends State<ManagerShell> {
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gửi nhắc nhở thất bại')));
                     }
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Iconsax.task_square, color: AppColors.brand500),
-                  title: const Text('Thêm lô hàng'),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    Navigator.of(context).push(slideRoute(const BatchesScreen()));
                   },
                 ),
                 ListTile(

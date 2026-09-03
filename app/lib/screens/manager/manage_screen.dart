@@ -6,7 +6,6 @@ import '../../core/page_transition.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_service.dart';
-import 'batches_screen.dart';
 import 'change_password_screen.dart';
 import 'customers_screen.dart';
 import 'defects_screen.dart';
@@ -100,7 +99,7 @@ class _ManageScreenState extends State<ManageScreen> {
           _MenuTile(
             icon: Iconsax.import_2,
             title: 'Nhập / Xuất',
-            subtitle: 'Phiếu nhập, xuất hàng',
+            subtitle: 'Nhập: khách giao vải · Xuất: trả hàng thành phẩm',
             onTap: () => Navigator.of(context).push(slideRoute(const OrdersScreen())),
           ),
           _MenuTile(
@@ -108,12 +107,6 @@ class _ManageScreenState extends State<ManageScreen> {
             title: 'Tồn kho',
             subtitle: 'Đã nhập, đã xuất, còn lại theo từng khách hàng',
             onTap: () => Navigator.of(context).push(slideRoute(const StockScreen())),
-          ),
-          _MenuTile(
-            icon: Iconsax.task_square,
-            title: 'Lô hàng',
-            subtitle: 'Tiến độ và trạng thái từng lô sản xuất',
-            onTap: () => Navigator.of(context).push(slideRoute(const BatchesScreen())),
           ),
           _MenuTile(
             icon: Iconsax.danger,

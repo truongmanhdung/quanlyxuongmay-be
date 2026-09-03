@@ -21,7 +21,7 @@ const overview = asyncHandler(async (req, res) => {
           _id: null,
           totalAmount: { $sum: "$amount" },
           totalQuantity: { $sum: "$quantity" },
-          batchCount: { $sum: 1 },
+          reportCount: { $sum: 1 },
           workers: { $addToSet: "$worker" },
         },
       },
@@ -52,7 +52,7 @@ const overview = asyncHandler(async (req, res) => {
       .limit(10),
   ]);
 
-  const agg = periodAgg[0] || { totalAmount: 0, totalQuantity: 0, batchCount: 0, workers: [] };
+  const agg = periodAgg[0] || { totalAmount: 0, totalQuantity: 0, reportCount: 0, workers: [] };
   const [totalWorkers, activeCustomers, activeProducts] = counts;
 
   res.json({
@@ -60,7 +60,7 @@ const overview = asyncHandler(async (req, res) => {
     to: range.to,
     totalAmount: agg.totalAmount,
     totalQuantity: agg.totalQuantity,
-    batchCount: agg.batchCount,
+    reportCount: agg.reportCount,
     // tong so cong nhan con hoat dong tai xuong (co flag active=true)
     totalWorkerCount: totalWorkers,
     // cong nhan "dang hoat dong" = co gui bao cao san luong trong ky nay

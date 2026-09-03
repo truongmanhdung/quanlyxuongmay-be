@@ -94,7 +94,7 @@ class _RevenueScreenState extends State<RevenueScreen> {
                       if (summary == null || summary!.rows.isEmpty)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 32),
-                          child: Center(child: Text('Chưa có lô hàng hoàn thành nào trong kỳ này')),
+                          child: Center(child: Text('Chưa có phiếu xuất nào trong kỳ này')),
                         )
                       else
                         ...summary!.rows.where((r) => r.customer != null).map(
@@ -104,7 +104,7 @@ class _RevenueScreenState extends State<RevenueScreen> {
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                   title: Text(r.customer!.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                                   subtitle: Text(
-                                      '${r.customer!.code} · ${formatNumber(r.batchCount)} lô · ${formatNumber(r.totalQuantity)} sp'),
+                                      '${r.customer!.code} · ${formatNumber(r.orderCount)} phiếu xuất · ${formatNumber(r.totalQuantity)} sp'),
                                   trailing: Text(
                                     formatCurrency(r.totalAmount),
                                     style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.brand600),
@@ -290,7 +290,7 @@ class _RevenueDetailScreenState extends State<RevenueDetailScreen> {
                                   ),
                                 ],
                               ),
-                              Text('${formatNumber(detail!.lines.length)} lô',
+                              Text('${formatNumber(detail!.lines.length)} dòng',
                                   style: const TextStyle(color: AppColors.brand700, fontWeight: FontWeight.w600)),
                             ],
                           ),
@@ -301,16 +301,16 @@ class _RevenueDetailScreenState extends State<RevenueDetailScreen> {
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 32),
                           child: Center(
-                              child: Text('Chưa có lô hàng hoàn thành trong kỳ này',
+                              child: Text('Chưa có phiếu xuất trong kỳ này',
                                   style: TextStyle(color: AppColors.gray500))),
                         )
                       else ...[
                         const Padding(
                           padding: EdgeInsets.fromLTRB(4, 4, 4, 8),
-                          child: Text('Chi tiết theo lô hàng hoàn thành',
+                          child: Text('Chi tiết theo dòng phiếu Xuất',
                               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
                         ),
-                        ...detail!.lines.map((l) => _BatchLineTile(line: l)),
+                        ...detail!.lines.map((l) => _ExportLineTile(line: l)),
                         const SizedBox(height: 10),
                         Card(
                           color: AppColors.brand600,
@@ -366,9 +366,9 @@ class _RevenueDetailScreenState extends State<RevenueDetailScreen> {
   }
 }
 
-class _BatchLineTile extends StatelessWidget {
-  final RevenueBatchLine line;
-  const _BatchLineTile({required this.line});
+class _ExportLineTile extends StatelessWidget {
+  final RevenueExportLine line;
+  const _ExportLineTile({required this.line});
 
   @override
   Widget build(BuildContext context) {
@@ -394,8 +394,8 @@ class _BatchLineTile extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Lô ${line.code}'
-              '${line.completedAt != null ? ' · ${formatDate(line.completedAt!)}' : ''}',
+              'Phiếu ${line.orderCode}'
+              '${line.date != null ? ' · ${formatDate(line.date!)}' : ''}',
               style: const TextStyle(color: AppColors.gray500, fontSize: 12),
             ),
             const SizedBox(height: 2),

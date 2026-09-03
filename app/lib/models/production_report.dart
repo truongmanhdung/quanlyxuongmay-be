@@ -22,7 +22,6 @@ class ProductionReport {
   final CustomerRef? customer;
   final ProductRef? product;
   final ProcessStageRef? processStage;
-  final String? batchNumber;
   final double quantity;
   final double unitPrice;
   final double amount;
@@ -36,7 +35,6 @@ class ProductionReport {
     required this.customer,
     required this.product,
     required this.processStage,
-    this.batchNumber,
     required this.quantity,
     required this.unitPrice,
     required this.amount,
@@ -53,7 +51,6 @@ class ProductionReport {
         processStage: json['processStage'] != null
             ? ProcessStageRef.fromJson(json['processStage'] as Map<String, dynamic>)
             : null,
-        batchNumber: json['batchNumber'] as String?,
         quantity: (json['quantity'] as num).toDouble(),
         unitPrice: (json['unitPrice'] as num).toDouble(),
         amount: (json['amount'] as num).toDouble(),

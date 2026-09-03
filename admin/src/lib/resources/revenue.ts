@@ -8,7 +8,7 @@ export interface RevenueSlip {
   periodTo: string;
   totalQuantity: number;
   totalAmount: number;
-  batchCount: number;
+  orderCount: number;
   issuedAt: string;
 }
 

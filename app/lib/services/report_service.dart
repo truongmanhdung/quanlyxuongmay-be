@@ -9,7 +9,6 @@ class ReportService {
     required String customer,
     required String product,
     required String processStage,
-    String? batchNumber,
     required double quantity,
     DateTime? workDate,
   }) async {
@@ -17,7 +16,6 @@ class ReportService {
       'customer': customer,
       'product': product,
       'processStage': processStage,
-      'batchNumber': batchNumber,
       'quantity': quantity,
       if (workDate != null) 'workDate': workDate.toIso8601String(),
     });

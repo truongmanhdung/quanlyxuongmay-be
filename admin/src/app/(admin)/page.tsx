@@ -71,15 +71,15 @@ export default function DashboardPage() {
         />
         <StatCard
           icon={<BoxIcon className="text-brand-500 size-6" />}
-          label="Tổng sản lượng hoàn thành"
+          label="Tổng sản lượng đã duyệt"
           value={`${formatNumber(data.totalQuantity)} sản phẩm`}
-          href="/batches"
+          href="/notifications"
         />
         <StatCard
           icon={<TaskIcon className="text-brand-500 size-6" />}
-          label="Số lô hàng hoàn thành"
-          value={formatNumber(data.batchCount)}
-          href="/batches?status=hoan_thanh"
+          label="Số lượt báo cáo đã duyệt"
+          value={formatNumber(data.reportCount)}
+          href="/notifications"
         />
         <StatCard
           icon={<GroupIcon className="text-brand-500 size-6" />}

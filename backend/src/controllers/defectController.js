@@ -10,18 +10,16 @@ const { emitToAdmins } = require("../realtime/socket");
 const POPULATE = [
   { path: "product", select: "name unit" },
   { path: "customer", select: "code name" },
-  { path: "batch", select: "code" },
   { path: "processStage", select: "name" },
   { path: "worker", select: "code name" },
 ];
 
-// GET /api/defects?product=&customer=&batch=&type=&from=&to=
+// GET /api/defects?product=&customer=&type=&from=&to=
 const list = asyncHandler(async (req, res) => {
-  const { product, customer, batch, type, from, to } = req.query;
+  const { product, customer, type, from, to } = req.query;
   const filter = {};
   if (product) filter.product = product;
   if (customer) filter.customer = customer;
-  if (batch) filter.batch = batch;
   if (type) filter.type = type;
   if (from || to) {
     filter.reportedAt = {};
@@ -32,9 +30,9 @@ const list = asyncHandler(async (req, res) => {
   res.json(defects);
 });
 
-// POST { batch?, product, customer, processStage?, worker?, quantity, type, reason, reportedAt? }
+// POST { product, customer, processStage?, worker?, quantity, type, reason, reportedAt? }
 const create = asyncHandler(async (req, res) => {
-  const { batch, product, customer, processStage, worker, quantity, type, reason, reportedAt } = req.body;
+  const { product, customer, processStage, worker, quantity, type, reason, reportedAt } = req.body;
   if (!product || !customer || quantity === undefined || !type) {
     return res.status(400).json({ message: "Thiếu mẫu hàng, khách hàng, số lượng hoặc loại" });
   }
@@ -42,7 +40,6 @@ const create = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Loại không hợp lệ" });
   }
   const defect = await DefectReport.create({
-    batch: batch || undefined,
     product,
     customer,
     processStage: processStage || undefined,

@@ -25,7 +25,6 @@ class _SubmitScreenState extends State<SubmitScreen> {
   Product? selectedProduct;
   ProcessStage? selectedStage;
 
-  final _batchCtrl = TextEditingController();
   final _quantityCtrl = TextEditingController();
 
   bool loadingCustomers = true;
@@ -43,7 +42,6 @@ class _SubmitScreenState extends State<SubmitScreen> {
 
   @override
   void dispose() {
-    _batchCtrl.dispose();
     _quantityCtrl.dispose();
     super.dispose();
   }
@@ -130,11 +128,9 @@ class _SubmitScreenState extends State<SubmitScreen> {
         customer: selectedCustomer!.id,
         product: selectedProduct!.id,
         processStage: selectedStage!.id,
-        batchNumber: _batchCtrl.text.trim().isEmpty ? null : _batchCtrl.text.trim(),
         quantity: _quantity,
       );
       if (!mounted) return;
-      _batchCtrl.clear();
       _quantityCtrl.clear();
       setState(() {
         selectedCustomer = null;
@@ -212,13 +208,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
                     onChanged: selectedProduct == null ? null : (s) => setState(() => selectedStage = s),
                   ),
                   const SizedBox(height: 16),
-                  const _FieldLabel('4. Số lô (không bắt buộc)'),
-                  TextField(
-                    controller: _batchCtrl,
-                    decoration: const InputDecoration(hintText: 'VD: LO001'),
-                  ),
-                  const SizedBox(height: 16),
-                  const _FieldLabel('5. Sản lượng'),
+                  const _FieldLabel('4. Sản lượng'),
                   TextField(
                     controller: _quantityCtrl,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),

@@ -4,11 +4,9 @@ import 'package:provider/provider.dart';
 import '../../core/api_client.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
-import '../../models/batch.dart';
 import '../../models/customer.dart';
 import '../../models/order.dart';
 import '../../models/product.dart';
-import '../../services/batch_service.dart';
 import '../../services/customer_service.dart';
 import '../../services/order_service.dart';
 import '../../services/product_service.dart';
@@ -69,10 +67,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     String type = 'nhap';
     Customer selectedCustomer = customers.first;
     Product? selectedProduct;
-    Batch? selectedBatch;
     List<Product> products = [];
-    List<Batch> batches = [];
-    String? loadedBatchesForProduct;
 
     final saved = await showAppFormSheet<bool>(
       context: context,
@@ -87,21 +82,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
             });
           }
 
-          Future<void> loadBatches(Customer c, Product p) async {
-            final api = ctx.read<ApiClient>();
-            final data = await BatchService(api).list(customer: c.id, product: p.id, active: true);
-            setSheetState(() {
-              batches = data;
-              selectedBatch = null;
-              loadedBatchesForProduct = p.id;
-            });
-          }
-
           if (products.isEmpty && selectedCustomer.id.isNotEmpty) {
             loadProducts(selectedCustomer);
-          }
-          if (selectedProduct != null && loadedBatchesForProduct != selectedProduct!.id) {
-            loadBatches(selectedCustomer, selectedProduct!);
           }
 
           return AppFormSheetScaffold(
@@ -141,20 +123,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   initialValue: selectedProduct,
                   decoration: const InputDecoration(labelText: 'Mẫu hàng'),
                   items: products.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
-                  onChanged: (p) => setSheetState(() {
-                    selectedProduct = p;
-                    loadedBatchesForProduct = null;
-                  }),
-                ),
-                const SizedBox(height: 14),
-                DropdownButtonFormField<Batch?>(
-                  initialValue: selectedBatch,
-                  decoration: const InputDecoration(labelText: 'Lô hàng (không bắt buộc)'),
-                  items: [
-                    const DropdownMenuItem<Batch?>(value: null, child: Text('— Không gắn lô —')),
-                    ...batches.map((b) => DropdownMenuItem<Batch?>(value: b, child: Text(b.code))),
-                  ],
-                  onChanged: (b) => setSheetState(() => selectedBatch = b),
+                  onChanged: (p) => setSheetState(() => selectedProduct = p),
                 ),
                 const SizedBox(height: 14),
                 TextField(
@@ -178,7 +147,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           ? [
                               {
                                 'product': selectedProduct!.id,
-                                if (selectedBatch != null) 'batch': selectedBatch!.id,
                                 'quantity': double.tryParse(qtyCtrl.text) ?? 0,
                                 'unitPrice': selectedProduct!.standardPrice,
                               }

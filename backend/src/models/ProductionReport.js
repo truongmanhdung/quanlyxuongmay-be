@@ -7,7 +7,6 @@ const productionReportSchema = new mongoose.Schema(
     customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
     product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }, // ma_hang
     processStage: { type: mongoose.Schema.Types.ObjectId, ref: "ProcessStage", required: true }, // cong_doan
-    batchNumber: { type: String, trim: true }, // so_lo
     quantity: { type: Number, required: true, min: 0 }, // so_luong_san_xuat
     unitPrice: { type: Number, required: true, min: 0 }, // don gia chot tai thoi diem gui
     amount: { type: Number, required: true, min: 0 }, // quantity * unitPrice

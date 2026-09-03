@@ -88,7 +88,7 @@ export default function NotificationsPage() {
       <div>
         <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Duyệt sản lượng</h1>
         <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-          Các lần công nhân gửi sản lượng theo lô hàng — xác nhận hoặc từ chối từng báo cáo tại đây
+          Các lần công nhân gửi sản lượng theo mẫu hàng / công đoạn — xác nhận hoặc từ chối từng báo cáo tại đây
         </p>
       </div>
 
@@ -118,7 +118,6 @@ export default function NotificationsPage() {
               <TableRow>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Công nhân</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Mẫu hàng / Công đoạn</TableCell>
-                <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Lô</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Sản lượng</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Thành tiền</TableCell>
                 <TableCell isHeader className="py-3 px-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Ngày giờ gửi</TableCell>
@@ -129,12 +128,12 @@ export default function NotificationsPage() {
             <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading && (
                 <TableRow>
-                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={8}>Đang tải...</TableCell>
+                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={7}>Đang tải...</TableCell>
                 </TableRow>
               )}
               {!loading && reports.length === 0 && (
                 <TableRow>
-                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={8}>Không có báo cáo nào</TableCell>
+                  <TableCell className="py-6 px-5 text-center text-gray-400" colSpan={7}>Không có báo cáo nào</TableCell>
                 </TableRow>
               )}
               {reports.map((r) => (
@@ -146,7 +145,6 @@ export default function NotificationsPage() {
                   <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">
                     {r.product?.name ?? "(mẫu hàng đã xoá)"} — {r.processStage?.name ?? "(công đoạn đã xoá)"}
                   </TableCell>
-                  <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{r.batchNumber || "—"}</TableCell>
                   <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{formatNumber(r.quantity)}</TableCell>
                   <TableCell className="py-3 px-5 text-gray-600 text-theme-sm dark:text-gray-300">{formatCurrency(r.amount)}</TableCell>
                   <TableCell className="py-3 px-5 text-gray-500 text-theme-xs dark:text-gray-400">{formatDateTime(r.createdAt)}</TableCell>

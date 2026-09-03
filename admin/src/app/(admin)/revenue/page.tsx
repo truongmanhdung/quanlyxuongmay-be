@@ -91,14 +91,14 @@ export default function RevenuePage() {
     { title: "Mã KH", dataIndex: ["customer", "code"], key: "code", width: 100 },
     { title: "Khách hàng", dataIndex: ["customer", "name"], key: "name" },
     {
-      title: "Số lô",
-      dataIndex: "batchCount",
-      key: "batchCount",
+      title: "Số phiếu xuất",
+      dataIndex: "orderCount",
+      key: "orderCount",
       align: "right" as const,
       render: (v: number) => formatNumber(v),
     },
     {
-      title: "Sản lượng",
+      title: "Sản lượng xuất",
       dataIndex: "totalQuantity",
       key: "totalQuantity",
       align: "right" as const,
@@ -151,8 +151,7 @@ export default function RevenuePage() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-800 dark:text-white/90">Doanh thu khách hàng</h1>
           <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-            Doanh thu theo kỳ từ các lô hàng đã hoàn thành (sản lượng × đơn giá chuẩn mẫu hàng) — bấm vào từng dòng để xem
-            chi tiết lô
+            Doanh thu theo kỳ = tổng các phiếu Xuất (trả hàng thành phẩm cho khách) — bấm vào từng dòng để xem chi tiết
           </p>
         </div>
         <DateRangeFilter from={from} to={to} onChange={setRange} />
@@ -173,7 +172,7 @@ export default function RevenuePage() {
             columns={columns}
             dataSource={dataSource}
             pagination={false}
-            locale={{ emptyText: "Chưa có lô hàng hoàn thành nào trong kỳ này" }}
+            locale={{ emptyText: "Chưa có phiếu Xuất nào trong kỳ này" }}
             expandable={{
               onExpand: handleExpand,
               expandedRowRender: (row: RevenueRow) => {
@@ -188,21 +187,19 @@ export default function RevenuePage() {
                 return (
                   <div className="space-y-3">
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Chi tiết theo lô hàng hoàn thành
+                      Chi tiết theo dòng phiếu Xuất
                     </p>
                     {detail.lines.length === 0 ? (
-                      <p className="py-3 text-sm text-gray-400">Không có lô hàng nào trong kỳ này</p>
+                      <p className="py-3 text-sm text-gray-400">Không có phiếu Xuất nào trong kỳ này</p>
                     ) : (
                       <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
                         <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                          {detail.lines.map((l) => (
-                            <div key={l.batch} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                          {detail.lines.map((l, i) => (
+                            <div key={`${l.order}-${l.productName}-${i}`} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
                               <div className="text-gray-700 dark:text-gray-300">
                                 <span className="font-medium">{l.productName}</span>
-                                <span className="text-gray-400"> · Lô {l.code}</span>
-                                {l.completedAt && (
-                                  <span className="text-gray-400"> · {formatDate(l.completedAt)}</span>
-                                )}
+                                <span className="text-gray-400"> · Phiếu {l.orderCode}</span>
+                                {l.date && <span className="text-gray-400"> · {formatDate(l.date)}</span>}
                               </div>
                               <div className="whitespace-nowrap text-gray-500 dark:text-gray-400">
                                 {formatNumber(l.quantity)} × {formatCurrency(l.unitPrice)} ={" "}

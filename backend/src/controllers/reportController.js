@@ -10,9 +10,9 @@ const POPULATE = [
   { path: "processStage", select: "name unitPrice" },
 ];
 
-// POST /api/reports  (worker)  { customer, product, processStage, batchNumber, quantity, workDate }
+// POST /api/reports  (worker)  { customer, product, processStage, quantity, workDate }
 const create = asyncHandler(async (req, res) => {
-  const { customer, product, processStage, batchNumber, quantity, workDate } = req.body;
+  const { customer, product, processStage, quantity, workDate } = req.body;
   if (!customer || !product || !processStage || quantity === undefined) {
     return res.status(400).json({ message: "Thiếu khách hàng, mẫu hàng, công đoạn hoặc sản lượng" });
   }
@@ -31,7 +31,6 @@ const create = asyncHandler(async (req, res) => {
     customer,
     product,
     processStage,
-    batchNumber,
     quantity,
     unitPrice,
     amount,
