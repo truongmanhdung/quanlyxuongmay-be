@@ -46,7 +46,13 @@ async function stockFor(customerId, productId) {
   return { imported, exported, remaining: imported - exported };
 }
 
-// POST { type, customer, date, note, details: [{ product, quantity, unitPrice }] }
+// Don gia 1 dong don hang = don gia chuan cua mau hang (khong nhap tay). Dung lam snapshot doanh thu.
+async function unitPriceOf(productId) {
+  const product = await Product.findById(productId).select("standardPrice");
+  return product?.standardPrice || 0;
+}
+
+// POST { type, customer, date, note, details: [{ product, quantity }] }
 // Ma phieu tu sinh: Nhap -> PN0001, Xuat -> PX0001
 const create = asyncHandler(async (req, res) => {
   const { type, customer, date, note, details } = req.body;
@@ -83,12 +89,14 @@ const create = asyncHandler(async (req, res) => {
   let createdDetails = [];
   if (Array.isArray(details) && details.length > 0) {
     createdDetails = await OrderDetail.insertMany(
-      details.map((d) => ({
-        order: order._id,
-        product: d.product,
-        quantity: d.quantity,
-        unitPrice: d.unitPrice || 0,
-      }))
+      await Promise.all(
+        details.map(async (d) => ({
+          order: order._id,
+          product: d.product,
+          quantity: d.quantity,
+          unitPrice: await unitPriceOf(d.product),
+        }))
+      )
     );
   }
   res.status(201).json({ ...order.toObject(), details: createdDetails });
@@ -114,7 +122,7 @@ const remove = asyncHandler(async (req, res) => {
 // ---- Chi tiet don hang ----
 
 const addDetail = asyncHandler(async (req, res) => {
-  const { product, quantity, unitPrice } = req.body;
+  const { product, quantity } = req.body;
   if (!product || quantity === undefined) {
     return res.status(400).json({ message: "Thiếu mã hàng hoặc số lượng" });
   }
@@ -135,13 +143,13 @@ const addDetail = asyncHandler(async (req, res) => {
     order: req.params.id,
     product,
     quantity,
-    unitPrice: unitPrice || 0,
+    unitPrice: await unitPriceOf(product),
   });
   res.status(201).json(detail);
 });
 
 const updateDetail = asyncHandler(async (req, res) => {
-  const { quantity, unitPrice } = req.body;
+  const { quantity } = req.body;
   const existing = await OrderDetail.findOne({ _id: req.params.detailId, order: req.params.id });
   if (!existing) return res.status(404).json({ message: "Không tìm thấy chi tiết đơn hàng" });
 
@@ -162,7 +170,7 @@ const updateDetail = asyncHandler(async (req, res) => {
 
   const detail = await OrderDetail.findOneAndUpdate(
     { _id: req.params.detailId, order: req.params.id },
-    { $set: { quantity, unitPrice } },
+    { $set: { quantity } },
     { new: true, runValidators: true }
   );
   res.json(detail);

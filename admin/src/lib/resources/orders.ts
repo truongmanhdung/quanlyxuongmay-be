@@ -15,12 +15,12 @@ export const ordersApi = {
     customer: string;
     date?: string;
     note?: string;
-    details?: { product: string; batch?: string; quantity: number; unitPrice?: number }[];
+    details?: { product: string; quantity: number }[];
   }) => api.post<Order>("/orders", data),
   update: (id: string, data: Partial<Order>) => api.put<Order>(`/orders/${id}`, data),
   remove: (id: string) => api.del<void>(`/orders/${id}`),
 
-  addDetail: (orderId: string, data: { product: string; quantity: number; unitPrice?: number }) =>
+  addDetail: (orderId: string, data: { product: string; quantity: number }) =>
     api.post<OrderDetail>(`/orders/${orderId}/details`, data),
   removeDetail: (orderId: string, detailId: string) =>
     api.del<void>(`/orders/${orderId}/details/${detailId}`),

@@ -148,7 +148,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               {
                                 'product': selectedProduct!.id,
                                 'quantity': double.tryParse(qtyCtrl.text) ?? 0,
-                                'unitPrice': selectedProduct!.standardPrice,
                               }
                             ]
                           : [],

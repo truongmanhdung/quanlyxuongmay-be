@@ -17,7 +17,7 @@ import { Order, Customer, Product, StockSummaryRow } from "@/lib/types";
 import { ApiError } from "@/lib/api";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 
-type DetailRow = { product: string; productLabel: string; quantity: string; unitPrice: string };
+type DetailRow = { product: string; productLabel: string; quantity: string };
 
 export default function OrdersPage() {
   const confirmDialog = useConfirmDialog();
@@ -317,10 +317,7 @@ function CreateOrderModal({
   function addRow() {
     if (products.length === 0) return;
     const p = products[0];
-    setRows([
-      ...rows,
-      { product: p._id, productLabel: p.name, quantity: "1", unitPrice: String(p.standardPrice || 0) },
-    ]);
+    setRows([...rows, { product: p._id, productLabel: p.name, quantity: "1" }]);
   }
 
   function updateRow(idx: number, patch: Partial<DetailRow>) {
@@ -362,7 +359,6 @@ function CreateOrderModal({
         details: rows.map((r) => ({
           product: r.product,
           quantity: Number(r.quantity),
-          unitPrice: Number(r.unitPrice),
         })),
       });
       onCreated();
@@ -431,6 +427,13 @@ function CreateOrderModal({
               </Button>
             </div>
             {!customer && <p className="text-sm text-gray-400">Chọn khách hàng để thêm mặt hàng</p>}
+            {customer && rows.length > 0 && (
+              <div className="mb-1.5 flex items-center gap-2 px-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                <span className="flex-1">Mẫu hàng</span>
+                <span className="w-28 text-right">Số lượng</span>
+                <span className="w-6" />
+              </div>
+            )}
             <div className="space-y-2">
               {rows.map((r, idx) => (
                 <div key={idx} className="flex items-center gap-2">
@@ -455,8 +458,13 @@ function CreateOrderModal({
                       </span>
                     )}
                   </div>
-                  <Input type="number" className="!w-24" placeholder="SL" value={r.quantity} onChange={(e) => updateRow(idx, { quantity: e.target.value })} />
-                  <Input type="number" className="!w-28" placeholder="Đơn giá" value={r.unitPrice} onChange={(e) => updateRow(idx, { unitPrice: e.target.value })} />
+                  <Input
+                    type="number"
+                    className="!w-28 text-right"
+                    placeholder="Số lượng"
+                    value={r.quantity}
+                    onChange={(e) => updateRow(idx, { quantity: e.target.value })}
+                  />
                   <button type="button" onClick={() => removeRow(idx)} className="text-gray-500 hover:text-error-500 dark:text-gray-400">
                     <TrashBinIcon />
                   </button>
